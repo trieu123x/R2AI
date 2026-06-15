@@ -1,0 +1,60 @@
+Base filtered count (sectors & keywords & targets): 118732
+
+Legal types in base filtered:
+  - Công văn: 58226
+  - Quyết định: 34362
+  - Nghị quyết: 7357
+  - Thông tư: 4904
+  - Kế hoạch: 3757
+  - Thông báo: 3428
+  - Chỉ thị: 1730
+  - Nghị định: 1648
+  - Thông tư liên tịch: 922
+  - Văn bản hợp nhất: 658
+  - Hướng dẫn: 443
+  - Điều ước quốc tế: 290
+  - Sắc lệnh: 203
+  - Luật: 184
+  - Văn bản khác: 163
+  - Lệnh: 120
+  - Công điện: 98
+  - Báo cáo: 82
+  - Quy chế: 54
+  - Pháp lệnh: 36
+  - Quy định: 35
+  - Thông tri: 11
+  - Công ước: 5
+  - Điều lệ: 5
+  - Hiến pháp: 4
+  - Thoả thuận: 2
+  - WTO_Cam kết VN: 2
+  - WTO_Văn bản: 1
+  - Văn bản WTO: 1
+  - Hiệp định: 1
+
+Central filtered count: 33920
+
+Top issuing authorities in Central filtered:
+  - Bộ Tài chính: 6992
+  - Chủ tịch nước: 2870
+  - Thủ tướng Chính phủ: 2753
+  - Văn phòng Chính phủ: 2327
+  - Bảo hiểm xã hội Việt Nam: 2309
+  - Bộ Lao động – Thương binh và Xã hội: 2260
+  - Bộ Lao động - Thương binh và Xã hội: 1618
+  - Chính phủ: 1528
+  - Bộ Nội vụ: 723
+  - Bộ Xây dựng: 673
+  - Bộ Nông nghiệp và Phát triển nông thôn: 668
+  - Bộ Công nghiệp: 665
+  - Bộ Y tế: 662
+  - Bộ Công thương: 612
+  - Tổng liên đoàn Lao động Việt Nam: 524
+  - Bộ Kế hoạch và Đầu tư: 449
+  - Bộ Giao thông vận tải: 395
+  - Bộ Tư pháp: 366
+  - Quốc hội: 258
+  - Ngân hàng Nhà nước: 258
+
+Central Filtered Match Count: 33920
+Central Filtered Total Content Size: 599.37 MB

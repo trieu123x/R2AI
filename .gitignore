@@ -1,0 +1,10 @@
+# Ignored files and folders
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database files
+database/*.db
+database/local_chunks.db

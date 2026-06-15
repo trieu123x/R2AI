@@ -1,0 +1,67 @@
+Total metadata rows: 518255
+Matched by exact document number (14 target docs): 18
+  - 82196 | 25/2008/QH12: Luật bảo hiểm y tế 2008
+  - 427301 | 59/2020/QH14: Luật Doanh nghiệp 2020
+  - 333670 | 45/2019/QH14: Bộ luật Lao động 2019
+  - 387595 | 38/2019/QH14: Luật Quản lý thuế 2019
+  - 281082 | 91/2015/QH13: Nghị quyết 91/2015/QH13 về chương trình hoạt động giám sát của Quốc hội năm 2016
+  - 66934 | 13/2008/QH12: Luật Thuế giá trị gia tăng 2008
+  - 259700 | 58/2014/QH13: Luật Bảo hiểm xã hội 2014
+  - 59652 | 04/2007/QH12: Luật Thuế thu nhập cá nhân 2007
+  - 67430 | 13/2008/QH12: Nghị quyết số 13/2008/QH12 về việc phê chuẩn quyết toán ngân sách nhà nước năm 2006 do Quốc hội ban hành
+  - 66935 | 14/2008/QH12: Luật Thuế thu nhập doanh nghiệp 2008
+  - 68075 | 14/2008/QH12: Nghị quyết số 14/2008/QH12 về việc điều chỉnh địa giới hành chính giữa tỉnh Hà Tây và tỉnh Phú Thọ, giữa tỉnh Bình Phước và tỉnh Đồng Nai do Quốc hội ban hành
+  - 470561 | 47/2021/NĐ-CP: Nghị định 47/2021/NĐ-CP hướng dẫn Luật Doanh nghiệp
+  - 486147 | 80/2021/NĐ-CP: Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa
+  - 2633 | 36/2005/QH11: Luật Thương mại 2005
+  - 296215 | 91/2015/QH13: Bộ luật dân sự 2015
+  - 459400 | 145/2020/NĐ-CP: Nghị định 145/2020/NĐ-CP hướng dẫn Bộ luật Lao động về điều kiện lao động và quan hệ lao động
+  - 81884 | 25/2008/QH12: Nghị quyết số 25/2008/QH12 về việc kéo dài nhiệm kỳ hoạt động 2004 – 2009 của Hội đồng nhân dân và Ủy ban nhân dân các cấp do Quốc hội ban hành
+  - 320905 | 04/2017/QH14: Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017
+
+Keyword matches in title:
+  - 'doanh nghiệp nhỏ và vừa': 948
+  - 'hỗ trợ doanh nghiệp': 832
+  - 'luật doanh nghiệp': 216
+  - 'thuế thu nhập doanh nghiệp': 3823
+  - 'thuế giá trị gia tăng': 9624
+  - 'bảo hiểm xã hội': 4319
+  - 'hợp đồng lao động': 463
+  - 'người lao động': 2922
+  - 'hộ kinh doanh': 642
+  - 'đăng ký doanh nghiệp': 117
+  - 'giải thể doanh nghiệp': 39
+  - 'phá sản': 110
+Total unique documents matching keywords in title: 22955
+
+Top 30 legal sectors:
+  - Bộ máy hành chính: 164069
+  - Thuế - Phí - Lệ Phí: 66223
+  - Tài chính nhà nước: 58529
+  - Văn hóa - Xã hội: 54117
+  - Xuất nhập khẩu: 40465
+  - Tài nguyên - Môi trường: 37584
+  - Xây dựng - Đô thị: 36829
+  - Thương mại: 36192
+  - Bất động sản: 34793
+  - Thể thao - Y tế: 34166
+  - Giáo dục: 25532
+  - Giao thông - Vận tải: 24352
+  - Doanh nghiệp: 23622
+  - Lao động - Tiền lương: 22916
+  - Đầu tư: 22370
+  - Công nghệ thông tin: 19199
+  - Lĩnh vực khác: 13366
+  - Kế toán - Kiểm toán: 8584
+  - Quyền dân sự: 7900
+  - Tiền tệ - Ngân hàng: 7251
+  - Bảo hiểm: 5996
+  - Dịch vụ pháp lý: 4036
+  - Vi phạm hành chính: 3743
+  - Thủ tục Tố tụng: 3107
+  - Trách nhiệm hình sự: 2008
+  - Sở hữu trí tuệ: 1484
+  - Chứng khoán: 1162
+  - Xây dựng: 5
+  - Công nghệ- Thực phẩm: 5
+  - Công nghiệp: 4

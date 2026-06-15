@@ -1,0 +1,104 @@
+Document ID: 320905
+Title: Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017
+Document Number: 04/2017/QH14
+Raw Content Length: 30420 characters
+Generated 55 final chunks.
+
+================================================================================
+SAMPLE CHUNKS PRODUCED BY HYBRID STRATEGY:
+================================================================================
+
+--- Chunk 1 | Mục 0 | Raw Length: 317 chars ---
+
+[Raw Text with Context Prefix]:
+Văn bản: Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017 (04/2017/QH14) | Mục 0 | Nội dung: QUỐC HỘI  | CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM Độc lập - Tự do - Hạnh phúc 
+Luật số: 04/2017/QH14 | Hà Nội, ngày 12 tháng 6 năm 2017
+
+LUẬT
+
+HỖ TRỢ DOANH NGHIỆP NHỎ VÀ VỪA
+
+Căn cứ Hiến pháp nước Cộng hòa xã hội chủ nghĩa Việt Nam;
+
+Quốc hội ban hành Luật Hỗ trợ doanh nghiệp nhỏ và vừa.
+
+Chương I
+
+NHỮNG QUY ĐỊNH CHUNG
+
+[Word-Segmented Text for Embedding Model]:
+Văn_bản : Luật Hỗ_trợ doanh_nghiệp nhỏ và vừa 2017 ( 04 / 2017 / QH14 ) | Mục 0 | Nội_dung : QUỐC_HỘI | CỘNG HÒA XÃ_HỘI CHỦ_NGHĨA VIỆT NAM Độc_lập - Tự_do - Hạnh_phúc 
+ Luật số : 04 / 2017 / QH14 | Hà_Nội , ngày 12 tháng 6 năm 2017 
+ 
+ LUẬT 
+ 
+ HỖ_TRỢ DOANH_NGHIỆP NHỎ VÀ VỪA 
+ 
+ Căn_cứ Hiến_pháp nước Cộng_hòa xã_hội chủ_nghĩa Việt_Nam ; 
+ 
+ Quốc_hội ban_hành Luật Hỗ_trợ doanh_nghiệp nhỏ và vừa . 
+ 
+ Chương_I 
+ 
+ NHỮNG QUY_ĐỊNH CHUNG
+--------------------------------------------------
+
+--- Chunk 2 | Điều 1. Phạm vi điều chỉnh | Raw Length: 202 chars ---
+
+[Raw Text with Context Prefix]:
+Văn bản: Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017 (04/2017/QH14) | Điều 1. Phạm vi điều chỉnh | Nội dung: Điều 1. Phạm vi điều chỉnh
+
+Luật này quy định về nguyên tắc, nội dung, nguồn lực hỗ trợ doanh nghiệp nhỏ và vừa; trách nhiệm của cơ quan, tổ chức và cá nhân liên quan đến hỗ trợ doanh nghiệp nhỏ và vừa.
+
+[Word-Segmented Text for Embedding Model]:
+Văn_bản : Luật Hỗ_trợ doanh_nghiệp nhỏ và vừa 2017 ( 04 / 2017 / QH14 ) | Điều 1 . Phạm_vi điều_chỉnh | Nội_dung : Điều 1 . Phạm_vi điều_chỉnh 
+ 
+ Luật này quy_định về nguyên_tắc , nội_dung , nguồn_lực hỗ_trợ doanh_nghiệp nhỏ và vừa ; trách_nhiệm của cơ_quan , tổ_chức và cá_nhân liên_quan đến hỗ_trợ doanh_nghiệp nhỏ và vừa .
+--------------------------------------------------
+
+--- Chunk 3 | Điều 2. Đối tượng áp dụng | Raw Length: 284 chars ---
+
+[Raw Text with Context Prefix]:
+Văn bản: Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017 (04/2017/QH14) | Điều 2. Đối tượng áp dụng | Nội dung: Điều 2. Đối tượng áp dụng
+
+1. Doanh nghiệp được thành lập, tổ chức và hoạt động theo quy định của pháp luật về doanh nghiệp, đáp ứng các tiêu chí xác định doanh nghiệp nhỏ và vừa theo quy định của Luật này.
+
+2. Cơ quan, tổ chức và cá nhân liên quan đến hỗ trợ doanh nghiệp nhỏ và vừa.
+
+[Word-Segmented Text for Embedding Model]:
+Văn_bản : Luật Hỗ_trợ doanh_nghiệp nhỏ và vừa 2017 ( 04 / 2017 / QH14 ) | Điều 2 . Đối_tượng áp_dụng | Nội_dung : Điều 2 . Đối_tượng áp_dụng 
+ 
+ 1 . Doanh_nghiệp được thành_lập , tổ_chức và hoạt_động theo quy_định của pháp_luật về doanh_nghiệp , đáp_ứng các tiêu_chí xác_định doanh_nghiệp nhỏ và vừa theo quy_định của Luật này . 
+ 
+ 2 . Cơ_quan , tổ_chức và cá_nhân liên_quan đến hỗ_trợ doanh_nghiệp nhỏ và vừa .
+--------------------------------------------------
+
+--- Chunk 4 | Điều 3. Giải thích từ ngữ (Phần 1) | Raw Length: 703 chars ---
+
+[Raw Text with Context Prefix]:
+Văn bản: Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017 (04/2017/QH14) | Điều 3. Giải thích từ ngữ (Phần 1) | Nội dung: Điều 3. Giải thích từ ngữ
+Trong Luật này, các từ ngữ dưới đây được hiểu như sau:
+1. Doanh nghiệp nhỏ và vừa do phụ nữ làm chủ là doanh nghiệp nhỏ và vừa có một hoặc nhiều phụ nữ sở hữu từ 51% vốn điều lệ trở lên, trong đó có ít nhất một người quản lý điều hành doanh nghiệp đó.
+2. Doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo là doanh nghiệp nhỏ và vừa được thành lập để thực hiện ý tưởng trên cơ sở khai thác tài sản trí tuệ, công nghệ, mô hình kinh doanh mới và có khả năng tăng trưởng nhanh.
+3. Chuỗi giá trị là mạng lưới liên kết tạo ra giá trị gia tăng cho sản phẩm hoặc dịch vụ, bao gồm các giai đoạn tiếp nối nhau từ hình thành ý tưởng, thiết kế, sản xuất, phân phối sản phẩm đến người tiêu dùng.
+
+[Word-Segmented Text for Embedding Model]:
+Văn_bản : Luật Hỗ_trợ doanh_nghiệp nhỏ và vừa 2017 ( 04 / 2017 / QH14 ) | Điều 3 . Giải_thích từ_ngữ ( Phần 1 ) | Nội_dung : Điều 3 . Giải_thích từ_ngữ 
+ Trong Luật này , các từ_ngữ dưới đây được hiểu như sau : 
+ 1 . Doanh_nghiệp nhỏ và vừa do phụ_nữ làm_chủ là doanh_nghiệp nhỏ và vừa có một hoặc nhiều phụ_nữ sở_hữu từ 51 % vốn điều_lệ trở lên , trong đó có ít_nhất một người quản_lý điều_hành doanh_nghiệp đó . 
+ 2 . Doanh_nghiệp nhỏ và vừa khởi_nghiệp sáng_tạo là doanh_nghiệp nhỏ và vừa được thành_lập để thực_hiện ý_tưởng trên cơ_sở khai_thác tài_sản trí_tuệ , công_nghệ , mô_hình kinh_doanh mới và có khả_năng tăng_trưởng nhanh . 
+ 3 . Chuỗi giá_trị là mạng_lưới liên_kết tạo ra giá_trị gia_tăng cho sản_phẩm hoặc dịch_vụ , bao_gồm các giai_đoạn tiếp nối nhau từ hình_thành ý_tưởng , thiết_kế , sản_xuất , phân_phối sản_phẩm đến người tiêu_dùng .
+--------------------------------------------------
+
+--- Chunk 5 | Điều 3. Giải thích từ ngữ (Phần 2) | Raw Length: 709 chars ---
+
+[Raw Text with Context Prefix]:
+Văn bản: Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017 (04/2017/QH14) | Điều 3. Giải thích từ ngữ (Phần 2) | Nội dung: 4. Chuỗi phân phối sản phẩm là mạng lưới các trung gian thực hiện phân phối sản phẩm của doanh nghiệp nhỏ và vừa đến người tiêu dùng do các doanh nghiệp, tổ chức đầu tư, kinh doanh thực hiện.
+5. Cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa (sau đây gọi là cơ sở kỹ thuật) là cơ sở cung cấp các thiết bị dùng chung để hỗ trợ doanh nghiệp nhỏ và vừa thiết kế, thử nghiệm, đo lường, phân tích, giám định, kiểm định sản phẩm, hàng hóa, vật liệu.
+6. Cơ sở ươm tạo doanh nghiệp nhỏ và vừa (sau đây gọi là cơ sở ươm tạo) là cơ sở cung cấp các điều kiện về hạ tầng kỹ thuật, nguồn lực và dịch vụ cần thiết cho các tổ chức, cá nhân hoàn thiện ý tưởng kinh doanh, phát triển doanh nghiệp trong giai đoạn mới thành lập.
+
+[Word-Segmented Text for Embedding Model]:
+Văn_bản : Luật Hỗ_trợ doanh_nghiệp nhỏ và vừa 2017 ( 04 / 2017 / QH14 ) | Điều 3 . Giải_thích từ_ngữ ( Phần 2 ) | Nội_dung : 4 . Chuỗi phân_phối sản_phẩm là mạng_lưới các trung_gian thực_hiện phân_phối sản_phẩm của doanh_nghiệp nhỏ và vừa đến người tiêu_dùng do các doanh_nghiệp , tổ_chức đầu_tư , kinh_doanh thực_hiện . 
+ 5 . Cơ_sở kỹ_thuật hỗ_trợ doanh_nghiệp nhỏ và vừa ( sau đây gọi là cơ_sở kỹ_thuật ) là cơ_sở cung_cấp các thiết_bị dùng chung để hỗ_trợ doanh_nghiệp nhỏ và vừa thiết_kế , thử_nghiệm , đo_lường , phân_tích , giám_định , kiểm_định sản_phẩm , hàng_hóa , vật_liệu . 
+ 6 . Cơ_sở ươm tạo doanh_nghiệp nhỏ và vừa ( sau đây gọi là cơ_sở ươm tạo ) là cơ_sở cung_cấp các điều_kiện về hạ_tầng kỹ_thuật , nguồn_lực và dịch_vụ cần_thiết cho các tổ_chức , cá_nhân hoàn_thiện_ý_tưởng kinh_doanh , phát_triển doanh_nghiệp trong giai_đoạn mới thành_lập .
+--------------------------------------------------
