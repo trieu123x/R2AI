@@ -1,0 +1,164 @@
+
+──────────────────────────────────────────────────────────────────────
+📄  Nghị định 125/2020/NĐ-CP quy định về xử phạt vi phạm hành chính về thuế, hóa đơn
+    [125/2020/NĐ-CP] | 193,533 raw chars → 312 chunks
+
+  ── Chunk 1: Mục 0 (raw=521 | total=648 chars) ──
+  [Raw]:
+  Văn bản: Nghị định 125/2020/NĐ-CP quy định về xử phạt vi phạm hành chính về thuế, hóa đơn (125/2020/NĐ-CP) | Mục 0 | Nội dung: CHÍNH PHỦ  | CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM Độc lập - Tự do - Hạnh phúc 
+Số: 125/2020/NĐ-CP | Hà Nội, ngày 19 tháng 10 năm 2020
+
+NGHỊ ĐỊNH
+
+QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Nghị_định 125 / 2020 / NĐ - CP quy_định về xử_phạt vi_phạm hành_chính về thuế , hóa_đơn ( 125 / 2020 / NĐ - CP ) | Mục 0 | Nội_dung : CHÍNH_PHỦ | CỘNG HÒA XÃ_HỘI CHỦ_NGHĨA VIỆT NAM Độc_lập -...
+
+
+  ── Chunk 2: Điều 1. Phạm vi điều chỉnh và đối tượng áp dụng (Phần 1) (raw=310 | total=488 chars) ──
+  [Raw]:
+  Văn bản: Nghị định 125/2020/NĐ-CP quy định về xử phạt vi phạm hành chính về thuế, hóa đơn (125/2020/NĐ-CP) | Điều 1. Phạm vi điều chỉnh và đối tượng áp dụng (Phần 1) | Nội dung: Điều 1. Phạm vi điều chỉnh và đối tượng áp dụng
+1. Phạm vi điều chỉnh
+Nghị định này quy định về hành vi vi phạm hành chính...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Nghị_định 125 / 2020 / NĐ - CP quy_định về xử_phạt vi_phạm hành_chính về thuế , hóa_đơn ( 125 / 2020 / NĐ - CP ) | Điều 1 . Phạm_vi điều_chỉnh và đối_tượng áp_dụng ( Phần 1 ) | Nội_dung : Đi...
+
+
+  ── Chunk 3: Điều 1. Phạm vi điều chỉnh và đối tượng áp dụng (Phần 2) (raw=673 | total=851 chars) ──
+  [Raw]:
+  Văn bản: Nghị định 125/2020/NĐ-CP quy định về xử phạt vi phạm hành chính về thuế, hóa đơn (125/2020/NĐ-CP) | Điều 1. Phạm vi điều chỉnh và đối tượng áp dụng (Phần 2) | Nội dung: Nghị định này không áp dụng đối với vi phạm hành chính về phí, lệ phí; vi phạm hành chính về thuế đối với hàng hóa xuất kh...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Nghị_định 125 / 2020 / NĐ - CP quy_định về xử_phạt vi_phạm hành_chính về thuế , hóa_đơn ( 125 / 2020 / NĐ - CP ) | Điều 1 . Phạm_vi điều_chỉnh và đối_tượng áp_dụng ( Phần 2 ) | Nội_dung : Ng...
+
+
+──────────────────────────────────────────────────────────────────────
+📄  Nghị định 64/2026/NĐ-CP hướng dẫn Luật Phục hồi, phá sản về thi hành quyết định tuyên bố doanh nghiệp, hợp tác xã phá sản
+    [64/2026/NĐ-CP] | 27,474 raw chars → 49 chunks
+
+  ── Chunk 1: Mục 0 (raw=666 | total=833 chars) ──
+  [Raw]:
+  Văn bản: Nghị định 64/2026/NĐ-CP hướng dẫn Luật Phục hồi, phá sản về thi hành quyết định tuyên bố doanh nghiệp, hợp tác xã phá sản (64/2026/NĐ-CP) | Mục 0 | Nội dung: CHÍNH PHỦ  | CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM Độc lập - Tự do - Hạnh phúc 
+Số: 64/2026/NĐ-CP | Hà Nội, ngày 28 tháng 02 năm 2026
+
+N...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Nghị_định 64 / 2026 / NĐ - CP hướng_dẫn Luật Phục_hồi , phá_sản về thi_hành_quyết_định tuyên_bố doanh_nghiệp , hợp_tác_xã phá_sản ( 64 / 2026 / NĐ - CP ) | Mục 0 | Nội_dung : CHÍNH_PHỦ | CỘN...
+
+
+  ── Chunk 2: Điều 1. Phạm vi điều chỉnh (raw=261 | total=449 chars) ──
+  [Raw]:
+  Văn bản: Nghị định 64/2026/NĐ-CP hướng dẫn Luật Phục hồi, phá sản về thi hành quyết định tuyên bố doanh nghiệp, hợp tác xã phá sản (64/2026/NĐ-CP) | Điều 1. Phạm vi điều chỉnh | Nội dung: Điều 1. Phạm vi điều chỉnh
+
+Nghị định này quy định chi tiết Điều 76, Điều 77 và một số biện pháp để tổ chức, hướ...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Nghị_định 64 / 2026 / NĐ - CP hướng_dẫn Luật Phục_hồi , phá_sản về thi_hành_quyết_định tuyên_bố doanh_nghiệp , hợp_tác_xã phá_sản ( 64 / 2026 / NĐ - CP ) | Điều 1 . Phạm_vi điều_chỉnh | Nội_...
+
+
+  ── Chunk 3: Điều 2. Trách nhiệm của cơ quan, tổ chức, cá nhân trong thi hành quyết định tuyên bố phá sản (raw=694 | total=948 chars) ──
+  [Raw]:
+  Văn bản: Nghị định 64/2026/NĐ-CP hướng dẫn Luật Phục hồi, phá sản về thi hành quyết định tuyên bố doanh nghiệp, hợp tác xã phá sản (64/2026/NĐ-CP) | Điều 2. Trách nhiệm của cơ quan, tổ chức, cá nhân trong thi hành quyết định tuyên bố phá sản | Nội dung: Điều 2. Trách nhiệm của cơ quan, tổ chức, cá n...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Nghị_định 64 / 2026 / NĐ - CP hướng_dẫn Luật Phục_hồi , phá_sản về thi_hành_quyết_định tuyên_bố doanh_nghiệp , hợp_tác_xã phá_sản ( 64 / 2026 / NĐ - CP ) | Điều 2 . Trách_nhiệm của cơ_quan ,...
+
+
+──────────────────────────────────────────────────────────────────────
+📄  Thông tư 103/2014/TT-BTC hướng dẫn thực hiện nghĩa vụ thuế áp dụng đối với tổ chức, cá nhân nước ngoài kinh doanh tại Việt Nam hoặc có thu nhập phát sinh tại Việt Nam do Bộ trưởng Bộ Tài chính ban hành
+    [103/2014/TT-BTC] | 62,988 raw chars → 105 chunks
+
+  ── Chunk 1: Mục 0 (Phần 1) (raw=593 | total=851 chars) ──
+  [Raw]:
+  Văn bản: Thông tư 103/2014/TT-BTC hướng dẫn thực hiện nghĩa vụ thuế áp dụng đối với tổ chức, cá nhân nước ngoài kinh doanh tại Việt Nam hoặc có thu nhập phát sinh tại Việt Nam do Bộ trưởng Bộ Tài chính ban hành (103/2014/TT-BTC) | Mục 0 (Phần 1) | Nội dung: BỘ TÀI CHÍNH  | CỘNG HÒA XÃ HỘI CHỦ NGHĨA ...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Thông_tư 103 / 2014 / TT - BTC hướng_dẫn thực_hiện nghĩa_vụ thuế áp_dụng đối_với tổ_chức , cá_nhân nước_ngoài kinh_doanh tại Việt_Nam hoặc có thu_nhập phát_sinh tại Việt_Nam do Bộ_trưởng Bộ ...
+
+
+  ── Chunk 2: Mục 0 (Phần 2) (raw=684 | total=942 chars) ──
+  [Raw]:
+  Văn bản: Thông tư 103/2014/TT-BTC hướng dẫn thực hiện nghĩa vụ thuế áp dụng đối với tổ chức, cá nhân nước ngoài kinh doanh tại Việt Nam hoặc có thu nhập phát sinh tại Việt Nam do Bộ trưởng Bộ Tài chính ban hành (103/2014/TT-BTC) | Mục 0 (Phần 2) | Nội dung: Căn cứ Luật Thuế thu nhập doanh nghiệp số ...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Thông_tư 103 / 2014 / TT - BTC hướng_dẫn thực_hiện nghĩa_vụ thuế áp_dụng đối_với tổ_chức , cá_nhân nước_ngoài kinh_doanh tại Việt_Nam hoặc có thu_nhập phát_sinh tại Việt_Nam do Bộ_trưởng Bộ ...
+
+
+  ── Chunk 3: Mục 0 (Phần 3) (raw=215 | total=473 chars) ──
+  [Raw]:
+  Văn bản: Thông tư 103/2014/TT-BTC hướng dẫn thực hiện nghĩa vụ thuế áp dụng đối với tổ chức, cá nhân nước ngoài kinh doanh tại Việt Nam hoặc có thu nhập phát sinh tại Việt Nam do Bộ trưởng Bộ Tài chính ban hành (103/2014/TT-BTC) | Mục 0 (Phần 3) | Nội dung: Bộ trưởng Bộ Tài chính ban hành Thông tư h...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Thông_tư 103 / 2014 / TT - BTC hướng_dẫn thực_hiện nghĩa_vụ thuế áp_dụng đối_với tổ_chức , cá_nhân nước_ngoài kinh_doanh tại Việt_Nam hoặc có thu_nhập phát_sinh tại Việt_Nam do Bộ_trưởng Bộ ...
+
+
+──────────────────────────────────────────────────────────────────────
+📄  Nghị định 91/2015/NĐ-CP về đầu tư vốn nhà nước vào doanh nghiệp và quản lý, sử dụng vốn, tài sản tại doanh nghiệp
+    [91/2015/NĐ-CP] | 80,119 raw chars → 134 chunks
+
+  ── Chunk 1: Mục 0 (raw=755 | total=914 chars) ──
+  [Raw]:
+  Văn bản: Nghị định 91/2015/NĐ-CP về đầu tư vốn nhà nước vào doanh nghiệp và quản lý, sử dụng vốn, tài sản tại doanh nghiệp (91/2015/NĐ-CP) | Mục 0 | Nội dung: CHÍNH PHỦ  | CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM Độc lập - Tự do - Hạnh phúc 
+Số: 91/2015/NĐ-CP | Hà Nội, ngày 13 tháng 10 năm 2015
+
+NGHỊ ĐỊNH...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Nghị_định 91 / 2015 / NĐ - CP về đầu_tư vốn nhà_nước vào doanh_nghiệp và quản_lý , sử_dụng vốn , tài_sản tại doanh_nghiệp ( 91 / 2015 / NĐ - CP ) | Mục 0 | Nội_dung : CHÍNH_PHỦ | CỘNG HÒA XÃ...
+
+
+  ── Chunk 2: Điều 1. Phạm vi điều chỉnh (raw=245 | total=425 chars) ──
+  [Raw]:
+  Văn bản: Nghị định 91/2015/NĐ-CP về đầu tư vốn nhà nước vào doanh nghiệp và quản lý, sử dụng vốn, tài sản tại doanh nghiệp (91/2015/NĐ-CP) | Điều 1. Phạm vi điều chỉnh | Nội dung: Điều 1. Phạm vi điều chỉnh
+
+Nghị định này quy định việc đầu tư vốn nhà nước vào doanh nghiệp; quản lý tài chính đối với ...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Nghị_định 91 / 2015 / NĐ - CP về đầu_tư vốn nhà_nước vào doanh_nghiệp và quản_lý , sử_dụng vốn , tài_sản tại doanh_nghiệp ( 91 / 2015 / NĐ - CP ) | Điều 1 . Phạm_vi điều_chỉnh | Nội_dung : Đ...
+
+
+  ── Chunk 3: Điều 2. Đối tượng áp dụng (raw=694 | total=873 chars) ──
+  [Raw]:
+  Văn bản: Nghị định 91/2015/NĐ-CP về đầu tư vốn nhà nước vào doanh nghiệp và quản lý, sử dụng vốn, tài sản tại doanh nghiệp (91/2015/NĐ-CP) | Điều 2. Đối tượng áp dụng | Nội dung: Điều 2. Đối tượng áp dụng
+
+1. Cơ quan đại diện chủ sở hữu.
+
+2. Doanh nghiệp nhà nước bao gồm:
+
+a) Công ty trách nhiệm hữu...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Nghị_định 91 / 2015 / NĐ - CP về đầu_tư vốn nhà_nước vào doanh_nghiệp và quản_lý , sử_dụng vốn , tài_sản tại doanh_nghiệp ( 91 / 2015 / NĐ - CP ) | Điều 2 . Đối_tượng áp_dụng | Nội_dung : Đi...
+
+
+──────────────────────────────────────────────────────────────────────
+📄  Luật Thuế thu nhập doanh nghiệp 2025
+    [67/2025/QH15] | 47,496 raw chars → 77 chunks
+
+  ── Chunk 1: Mục 0 (raw=309 | total=390 chars) ──
+  [Raw]:
+  Văn bản: Luật Thuế thu nhập doanh nghiệp 2025 (67/2025/QH15) | Mục 0 | Nội dung: QUỐC HỘI  | CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM Độc lập - Tự do - Hạnh phúc 
+Luật số: 67/2025/QH15 | Hà Nội, ngày 14 tháng 6 năm 2025
+
+LUẬT
+
+THUẾ THU NHẬP DOANH NGHIỆP
+
+Căn cứ Hiến pháp nước Cộng hòa xã hội chủ nghĩa Việ...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Luật Thuế_thu_nhập doanh_nghiệp 2025 ( 67 / 2025 / QH15 ) | Mục 0 | Nội_dung : QUỐC_HỘI | CỘNG HÒA XÃ_HỘI CHỦ_NGHĨA VIỆT NAM Độc_lập - Tự_do - Hạnh_phúc 
+ Luật số : 67 / 2025 / QH15 | Hà_Nội...
+
+
+  ── Chunk 2: Điều 1. Phạm vi điều chỉnh (raw=187 | total=289 chars) ──
+  [Raw]:
+  Văn bản: Luật Thuế thu nhập doanh nghiệp 2025 (67/2025/QH15) | Điều 1. Phạm vi điều chỉnh | Nội dung: Điều 1. Phạm vi điều chỉnh
+
+Luật này quy định về người nộp thuế, thu nhập chịu thuế, thu nhập được miễn thuế, căn cứ tính thuế, phương pháp tính thuế và ưu đãi thuế thu nhập doanh nghiệp.
+  [Segmented (first 200 chars)]:
+  Văn_bản : Luật Thuế_thu_nhập doanh_nghiệp 2025 ( 67 / 2025 / QH15 ) | Điều 1 . Phạm_vi điều_chỉnh | Nội_dung : Điều 1 . Phạm_vi điều_chỉnh 
+ 
+ Luật này quy_định về người nộp thuế , thu_nhập chịu thuế ...
+
+
+  ── Chunk 3: Điều 2. Người nộp thuế (Phần 1) (raw=794 | total=901 chars) ──
+  [Raw]:
+  Văn bản: Luật Thuế thu nhập doanh nghiệp 2025 (67/2025/QH15) | Điều 2. Người nộp thuế (Phần 1) | Nội dung: Điều 2. Người nộp thuế
+1. Người nộp thuế thu nhập doanh nghiệp là tổ chức hoạt động sản xuất, kinh doanh hàng hóa, dịch vụ có thu nhập chịu thuế theo quy định của Luật này (sau đây gọi là doanh...
+  [Segmented (first 200 chars)]:
+  Văn_bản : Luật Thuế_thu_nhập doanh_nghiệp 2025 ( 67 / 2025 / QH15 ) | Điều 2 . Người nộp thuế ( Phần 1 ) | Nội_dung : Điều 2 . Người nộp thuế 
+ 1 . Người nộp thuế thu_nhập doanh_nghiệp là tổ_chức hoạt...
+
+
+Total chunks across 5 docs: 677
