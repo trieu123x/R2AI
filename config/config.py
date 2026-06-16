@@ -13,6 +13,7 @@ class Config:
     SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
     SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     DATABASE_URL = os.getenv("DATABASE_URL")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your_openai_api_key_here")
 
     @classmethod
     def validate(cls):

@@ -34,7 +34,7 @@ from retrieval.retriever import RetrievalResult, extract_article_hint
 # Format: "Văn bản: Nghị định 39/2018/NĐ-CP về hướng dẫn ... (39/2018/NĐ-CP)"
 _CONTENT_HEADER_RE = re.compile(
     r'V\u0103n b\u1ea3n:\s*(.+?)\s*\(([^)]+)\)',
-    re.MULTILINE | re.UNICODE
+    re.MULTILINE | re.UNICODE | re.DOTALL
 )
 
 def _parse_meta_from_content(content: str) -> dict:
@@ -44,6 +44,7 @@ def _parse_meta_from_content(content: str) -> dict:
         return {"document_number": "", "title": "", "legal_type": ""}
 
     full_title = m.group(1).strip()
+    full_title = re.sub(r'\s+', ' ', full_title)
     doc_number = m.group(2).strip()
 
     # Tách legal_type (loại văn bản)
@@ -103,6 +104,10 @@ class LocalRetriever:
         self.rrf_k = rrf_k
         self._conn: Optional[sqlite3.Connection] = None
         self._model = None
+        
+        # GPT query enhancer
+        from retrieval.query_enhancer import GPTEnhancer
+        self.enhancer = GPTEnhancer()
 
     # ── Kết nối ─────────────────────────────────────────────────────────────────
 
@@ -112,6 +117,17 @@ class LocalRetriever:
                 raise FileNotFoundError(f"SQLite DB not found: {self.db_path}")
             self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self._conn.row_factory = sqlite3.Row
+            
+            # SQLite performance tuning
+            try:
+                cur = self._conn.cursor()
+                cur.execute("PRAGMA journal_mode=WAL;")
+                cur.execute("PRAGMA synchronous=OFF;")
+                cur.execute("PRAGMA cache_size=-2000000;") # 2GB cache
+                cur.execute("PRAGMA temp_store=MEMORY;")
+                cur.execute("PRAGMA mmap_size=3000000000;") # 3GB memory map
+            except Exception as e:
+                print(f"[local] Warning: Failed to apply SQLite PRAGMAs: {e}")
         return self._conn
 
     def close(self):
@@ -123,11 +139,15 @@ class LocalRetriever:
 
     def _get_model(self):
         if self._model is None:
+            import os
+            os.environ["HF_HUB_OFFLINE"] = "1"
             from sentence_transformers import SentenceTransformer
-            print("[local] Loading bkai-bi-encoder...", flush=True)
+            import torch
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print(f"[local] Loading bkai-bi-encoder on device '{device}'...", flush=True)
             t0 = time.time()
             self._model = SentenceTransformer(
-                "bkai-foundation-models/vietnamese-bi-encoder", device="cpu"
+                "bkai-foundation-models/vietnamese-bi-encoder", device=device
             )
             print(f"[local] Model loaded in {time.time()-t0:.1f}s", flush=True)
         return self._model
@@ -160,7 +180,7 @@ class LocalRetriever:
 
     # ── FTS Search ──────────────────────────────────────────────────────────────
 
-    def fts_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
+    def fts_search(self, query: str, top_k: Optional[int] = None, gpt_mode: Optional[str] = None) -> List[RetrievalResult]:
         """
         FTS search với SQLite FTS5 BM25 native.
         Fallback sang LIKE search nếu FTS5 index chưa được tạo đúng.
@@ -169,60 +189,109 @@ class LocalRetriever:
         Query cần nhập có dấu đầy đủ để match tốt nhất.
         """
         k = top_k or self.top_k
+        
+        # GPT query expansion
+        search_query = query
+        if gpt_mode in ("expand", "hyde") and self.enhancer.is_active:
+            search_query = self.enhancer.expand_query(query)
+
         conn = self._get_conn()
         cur = conn.cursor()
 
-        if self._has_fts5_index():
-            try:
-                # FTS5 với BM25 ranking
-                # Sanitize query: loại bỏ ký tự đặc biệt không hợp lệ với FTS5 MATCH
-                fts_query = re.sub(r'[^\w\s\u00C0-\u024F\u1E00-\u1EFF]', ' ', query)
-                fts_query = re.sub(r'\s+', ' ', fts_query).strip()
-                if not fts_query:
-                    raise ValueError("Empty FTS query after sanitization")
+        VIETNAMESE_STOPWORDS = {
+            "và", "hoặc", "nhưng", "vì", "nên", "của", "các", "những", "là", "có", 
+            "trong", "tại", "để", "theo", "được", "bị", "cho", "ra", "vào", "lên", 
+            "xuống", "do", "từ", "đến", "bằng", "with", "với", "về", "như", "thì", 
+            "mà", "khi", "gì", "này", "đó", "kia", "nọ", "thế", "vậy", "người", 
+            "việc", "sự", "cuộc", "cái", "con", "chiếc", "nào", "ai", "đâu",
+            "công", "ty", "doanh", "nghiệp", "nhà", "nước", "hợp", "đồng", "nhân", 
+            "viên", "bản", "chính", "quy", "định", "pháp", "luật"
+        }
 
+        # Helper function to execute two-step FTS search to avoid SQLite slow JOIN behavior
+        def _execute_fts_query(match_expr: str, limit: int) -> List[RetrievalResult]:
+            try:
                 cur.execute("""
-                    SELECT
-                        dc.id, dc.document_id, dc.chunk_index, dc.content,
-                        -bm25(chunks_fts5) AS score
+                    SELECT rowid, -bm25(chunks_fts5) AS score
                     FROM chunks_fts5
-                    JOIN document_chunks dc ON dc.rowid = chunks_fts5.rowid
                     WHERE chunks_fts5 MATCH ?
                     ORDER BY bm25(chunks_fts5)
                     LIMIT ?;
-                """, (fts_query, k))
+                """, (match_expr, limit))
                 rows = cur.fetchall()
-                results = []
-                for row in rows:
-                    cid = row[0]
-                    doc_id = row[1]
-                    chunk_idx = row[2]
-                    content = row[3] or ""
-                    score = float(row[4]) if row[4] else 0.0
-                    meta = _parse_meta_from_content(content)
-                    results.append(RetrievalResult(
+                if not rows:
+                    return []
+                    
+                rowids = [r[0] for r in rows]
+                scores = {r[0]: float(r[1]) if r[1] is not None else 0.0 for r in rows}
+                
+                placeholders = ",".join("?" for _ in rowids)
+                cur.execute(f"""
+                    SELECT rowid, id, document_id, chunk_index, content
+                    FROM document_chunks
+                    WHERE rowid IN ({placeholders})
+                """, rowids)
+                details = cur.fetchall()
+                
+                results_list = []
+                for row in details:
+                    r_id, cid, doc_id, chunk_idx, content = row
+                    score = scores.get(r_id, 0.0)
+                    meta = _parse_meta_from_content(content or "")
+                    results_list.append(RetrievalResult(
                         chunk_id=str(cid),
                         document_id=doc_id,
                         chunk_index=chunk_idx,
-                        content=content,
+                        content=content or "",
                         doc_number=meta["document_number"],
                         title=meta["title"],
                         legal_type=meta["legal_type"],
                         score=score,
                         source="fts",
-                        article_hint=extract_article_hint(content),
+                        article_hint=extract_article_hint(content or ""),
                     ))
-                if results:
-                    return results
-                # 0 results: try LIKE fallback (query may be missing diacritics)
-                print("[local][FTS5] 0 results from FTS5 (possibly missing diacritics). Trying LIKE fallback...")
+                results_list.sort(key=lambda x: x.score, reverse=True)
+                return results_list
             except Exception as e:
-                print(f"[local][FTS5] Error: {e}, falling back to LIKE search")
+                print(f"[local][FTS5] MATCH query error: {e}")
+                return []
+
+        if self._has_fts5_index():
+            # Sanitize search query
+            fts_query = re.sub(r'[^\w\s\u00C0-\u024F\u1E00-\u1EFF]', ' ', search_query)
+            fts_query = re.sub(r'\s+', ' ', fts_query).strip().lower()
+            if fts_query:
+                words = [w for w in fts_query.split() if len(w) >= 2]
+                keywords = [w for w in words if w not in VIETNAMESE_STOPWORDS]
+                if not keywords:
+                    keywords = words
+
+                results = []
+                if keywords:
+                    # 1. Try primary AND search of keywords
+                    and_expr = " AND ".join(keywords)
+                    results = _execute_fts_query(and_expr, k)
+                    
+                    # 2. Try fallback OR search of top 4 longest unique keywords if AND returned less than k results
+                    if len(results) < k:
+                        unique_keywords = sorted(list(set(keywords)), key=len, reverse=True)
+                        fallback_keywords = unique_keywords[:4]
+                        if fallback_keywords:
+                            or_expr = " OR ".join(fallback_keywords)
+                            fallback_results = _execute_fts_query(or_expr, k)
+                            existing_ids = {r.chunk_id for r in results}
+                            for r in fallback_results:
+                                if r.chunk_id not in existing_ids:
+                                    results.append(r)
+                
+                if results:
+                    return results[:k]
+                
+                print("[local][FTS5] 0 results from FTS5 (possibly missing diacritics). Trying LIKE fallback...")
 
         # LIKE fallback search (slower, for queries without diacritics)
         print("[local][FTS] Using LIKE fallback search...")
-
-        keywords = [w for w in query.split() if len(w) >= 3][:5]
+        keywords = [w for w in search_query.split() if len(w) >= 3][:5]
         if not keywords:
             return []
 
@@ -257,63 +326,138 @@ class LocalRetriever:
         results.sort(key=lambda x: -x.score)
         return results[:k]
 
-    # ── Vector Search ────────────────────────────────────────────────────────────
+    # ── FAISS Vector Search ───────────────────────────────────────────────────────
 
-    def vector_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
-        """Cosine similarity search trên embeddings trong SQLite (scan toàn bộ)."""
+    def _get_faiss_index(self):
+        """Lấy hoặc tự động build FAISS index từ SQLite database."""
+        import faiss
+        index_path = os.path.join(os.path.dirname(self.db_path), "local_chunks.index")
+        
+        if not hasattr(self, "_faiss_index") or self._faiss_index is None:
+            if os.path.exists(index_path):
+                print(f"[local] Loading FAISS index from {index_path}...", flush=True)
+                t0 = time.time()
+                self._faiss_index = faiss.read_index(index_path)
+                print(f"[local] FAISS index loaded in {time.time()-t0:.2f}s", flush=True)
+            else:
+                print(f"[local] FAISS index not found. Building FAISS index from {self.db_path} (one-time setup)...", flush=True)
+                t0 = time.time()
+                conn = self._get_conn()
+                cur = conn.cursor()
+                cur.execute("SELECT rowid, embedding FROM document_chunks WHERE embedding IS NOT NULL;")
+                rowids = []
+                embeddings = []
+                for rowid, emb_bytes in cur:
+                    if not emb_bytes:
+                        continue
+                    emb = np.frombuffer(emb_bytes, dtype=np.float32)
+                    rowids.append(rowid)
+                    embeddings.append(emb)
+                
+                if not embeddings:
+                    raise ValueError("No embeddings found in database to build FAISS index!")
+                
+                embeddings = np.array(embeddings, dtype=np.float32)
+                rowids = np.array(rowids, dtype=np.int64)
+                
+                # Chuẩn hóa vector L2 để tìm kiếm Cosine Similarity bằng Inner Product
+                norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+                norms[norms == 0] = 1.0
+                embeddings = embeddings / norms
+                
+                dim = embeddings.shape[1]
+                quantizer = faiss.IndexFlatIP(dim)
+                index = faiss.IndexIDMap(quantizer)
+                index.add_with_ids(embeddings, rowids)
+                
+                # Lưu index để các lần sau dùng ngay
+                faiss.write_index(index, index_path)
+                self._faiss_index = index
+                print(f"[local] FAISS index built and saved in {time.time()-t0:.2f}s", flush=True)
+                
+        return self._faiss_index
+
+    def vector_search(self, query: str, top_k: Optional[int] = None, gpt_mode: Optional[str] = None) -> List[RetrievalResult]:
+        """Tìm kiếm tương đồng vector bằng FAISS index (tải và tìm cực nhanh)."""
         k = top_k or self.top_k
-        query_vec = self.embed_query(query)
+        
+        # GPT enhancement
+        search_query = query
+        if gpt_mode == "hyde" and self.enhancer.is_active:
+            search_query = self.enhancer.generate_hyde(query)
+        elif gpt_mode == "expand" and self.enhancer.is_active:
+            search_query = self.enhancer.expand_query(query)
+            
+        query_vec = self.embed_query(search_query)
         query_norm = np.linalg.norm(query_vec)
         if query_norm == 0:
             return []
-
+            
+        # Chuẩn hóa query vector và định dạng cho FAISS
+        query_vec = query_vec / query_norm
+        query_vec = np.ascontiguousarray(query_vec.reshape(1, -1), dtype=np.float32)
+        
+        index = self._get_faiss_index()
+        scores, indices = index.search(query_vec, k)
+        scores = scores[0]
+        indices = indices[0]
+        
+        valid_indices = [int(idx) for idx in indices if idx != -1]
+        if not valid_indices:
+            return []
+            
+        # Truy vấn SQLite để lấy thông tin các chunks tương ứng với rowid
         conn = self._get_conn()
         cur = conn.cursor()
-        cur.execute(
-            "SELECT id, document_id, chunk_index, content, embedding "
-            "FROM document_chunks WHERE embedding IS NOT NULL;"
-        )
-
-        scores = []
-        for row in cur:
-            emb_bytes = row["embedding"]
-            if not emb_bytes:
-                continue
-            emb = np.frombuffer(emb_bytes, dtype=np.float32)
-            norm = np.linalg.norm(emb)
-            if norm == 0:
-                continue
-            score = float(np.dot(query_vec, emb) / (query_norm * norm))
-            scores.append((row["id"], row["document_id"], row["chunk_index"],
-                           row["content"], score))
-
-        scores.sort(key=lambda x: -x[4])
+        placeholders = ",".join("?" for _ in valid_indices)
+        cur.execute(f"""
+            SELECT rowid, id, document_id, chunk_index, content
+            FROM document_chunks
+            WHERE rowid IN ({placeholders});
+        """, valid_indices)
+        
+        rows = cur.fetchall()
+        row_map = {row["rowid"]: row for row in rows}
+        
         results = []
-        for cid, doc_id, chunk_idx, content, score in scores[:k]:
-            meta = _parse_meta_from_content(content or "")
+        for idx, score in zip(indices, scores):
+            idx = int(idx)
+            if idx not in row_map:
+                continue
+            row = row_map[idx]
+            cid = row["id"]
+            doc_id = row["document_id"]
+            chunk_idx = row["chunk_index"]
+            content = row["content"] or ""
+            
+            meta = _parse_meta_from_content(content)
             results.append(RetrievalResult(
                 chunk_id=str(cid),
                 document_id=doc_id,
                 chunk_index=chunk_idx,
-                content=content or "",
+                content=content,
                 doc_number=meta["document_number"],
                 title=meta["title"],
                 legal_type=meta["legal_type"],
-                score=score,
+                score=float(score),
                 source="vector",
-                article_hint=extract_article_hint(content or ""),
+                article_hint=extract_article_hint(content),
             ))
         return results
 
     # ── Hybrid (RRF) ────────────────────────────────────────────────────────────
 
-    def hybrid_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
+    def hybrid_search(self, query: str, top_k: Optional[int] = None, gpt_mode: Optional[str] = None) -> List[RetrievalResult]:
         """Kết hợp FTS + vector bằng Reciprocal Rank Fusion."""
         k = top_k or self.top_k
         fetch_k = k * 3
 
-        fts_results    = self.fts_search(query,    top_k=fetch_k)
-        vector_results = self.vector_search(query, top_k=fetch_k)
+        # For hybrid, vector uses the specified gpt_mode (e.g. HyDE), while FTS uses expand if GPT is active
+        vector_gpt_mode = gpt_mode
+        fts_gpt_mode = "expand" if gpt_mode else None
+
+        fts_results    = self.fts_search(query,    top_k=fetch_k, gpt_mode=fts_gpt_mode)
+        vector_results = self.vector_search(query, top_k=fetch_k, gpt_mode=vector_gpt_mode)
 
         chunk_map: dict = {}
         rrf_scores: dict = {}
@@ -354,16 +498,17 @@ class LocalRetriever:
         query: str,
         mode: Literal["vector", "fts", "hybrid"] = "fts",
         top_k: Optional[int] = None,
+        gpt_mode: Optional[Literal["expand", "hyde"]] = None,
     ) -> List[RetrievalResult]:
         t0 = time.time()
         if mode == "vector":
-            results = self.vector_search(query, top_k=top_k)
+            results = self.vector_search(query, top_k=top_k, gpt_mode=gpt_mode)
         elif mode == "fts":
-            results = self.fts_search(query, top_k=top_k)
+            results = self.fts_search(query, top_k=top_k, gpt_mode=gpt_mode)
         else:
-            results = self.hybrid_search(query, top_k=top_k)
+            results = self.hybrid_search(query, top_k=top_k, gpt_mode=gpt_mode)
         elapsed = time.time() - t0
-        print(f"[local] mode={mode} | {len(results)} results | {elapsed:.2f}s")
+        print(f"[local] mode={mode} | gpt_mode={gpt_mode} | {len(results)} results | {elapsed:.2f}s")
         return results
 
     @staticmethod

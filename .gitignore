@@ -8,3 +8,4 @@ __pycache__/
 # Database files
 database/*.db
 database/local_chunks.db
+database/*.index

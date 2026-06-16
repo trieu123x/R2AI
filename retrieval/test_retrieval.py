@@ -212,7 +212,7 @@ def run_interactive(args):
     print(colorize(f"  Vector weight: {args.vector_weight}  |  FTS weight: {args.fts_weight}  |  RRF-k: {args.rrf_k}", C.GRAY))
     print()
     print(colorize("  Nhap cau hoi phap ly. Go 'quit' de thoat.", C.WHITE))
-    print(colorize("  Lenh: ':mode fts|vector|hybrid', ':top 5', ':bench'", C.GRAY))
+    print(colorize("  Lenh: ':mode fts|vector|hybrid', ':gpt expand|hyde|none', ':top 5', ':bench'", C.GRAY))
     print(hr())
 
 
@@ -242,6 +242,15 @@ def run_interactive(args):
                 break
 
             # Lệnh đặc biệt
+            if raw.startswith(":gpt "):
+                new_gpt = raw.split()[-1].lower()
+                if new_gpt in ("expand", "hyde", "none"):
+                    args.gpt_mode = None if new_gpt == "none" else new_gpt
+                    print(colorize(f"  [OK] Da doi gpt_mode -> {new_gpt.upper()}", C.GREEN))
+                else:
+                    print(colorize("  [ERR] GPT mode khong hop le (expand|hyde|none)", C.RED))
+                continue
+
             if raw.startswith(":mode "):
                 new_mode = raw.split()[-1].lower()
                 if new_mode in ("fts", "vector", "hybrid"):
@@ -285,7 +294,7 @@ def run_interactive(args):
         print(hr())
 
         try:
-            results = retriever.retrieve(query, mode=mode, top_k=top_k)
+            results = retriever.retrieve(query, mode=mode, top_k=top_k, gpt_mode=getattr(args, "gpt_mode", None))
         except Exception as e:
             print(colorize(f"  ✗ LỖI: {e}", C.RED))
             if not interactive:
@@ -378,6 +387,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Chay benchmark so sanh ca 3 mode")
     p.add_argument("--export", type=str, default=None,
                    help="Export ket qua ra file JSON")
+    p.add_argument("--gpt-mode", choices=["expand", "hyde"], default=None,
+                   help="Chế độ cải thiện truy vấn bằng GPT (expand: Mở rộng truy vấn, hyde: Hypothetical Document Embedding)")
     p.add_argument("--local", "-l", action="store_true",
                    help="Dung local SQLite thay vi Supabase (offline mode)")
     return p

@@ -17,7 +17,8 @@ def worker_process(input_queue, output_queue, thread_id):
         torch.set_num_threads(2)
         
         # Load independent model copy per process
-        model = SentenceTransformer(MODEL_NAME, device='cpu')
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        model = SentenceTransformer(MODEL_NAME, device=device)
         
         batch_ids = []
         batch_texts = []

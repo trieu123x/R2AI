@@ -46,7 +46,7 @@ R2AI/
 ### 1. Cài Python packages
 
 ```bash
-pip install sentence-transformers pandas pyarrow psycopg2-binary python-dotenv numpy pyvi
+pip install sentence-transformers pandas pyarrow psycopg2-binary python-dotenv numpy pyvi faiss-cpu
 ```
 
 ### 2. Cấu hình `.env`
@@ -138,16 +138,19 @@ python database/push_chunks_to_supabase.py
 > CLI tương tác để test tìm kiếm mà không cần LLM.
 
 **Chế độ offline (SQLite):**
+
 ```bash
 python retrieval/test_retrieval.py --local
 ```
 
 **Chế độ online (Supabase, tự fallback về local nếu mất mạng):**
+
 ```bash
 python retrieval/test_retrieval.py
 ```
 
 **Các tham số hữu ích:**
+
 ```bash
 # Chỉ định mode tìm kiếm
 python retrieval/test_retrieval.py --local --mode fts       # Full-text search (BM25)
@@ -208,11 +211,12 @@ vietnamese-legal-documents/ (parquet)
 
 ## 📝 Ghi chú quan trọng
 
-| File | Kích thước | Ghi chú |
-|------|-----------|---------|
-| `database/local_chunks.db` | ~3 GB | Không commit lên git (đã có trong `.gitignore`) |
-| `vietnamese-legal-documents/` | ~vài GB | Dataset gốc, không commit |
-| Model `vietnamese-bi-encoder` | ~500 MB | Tự động tải từ HuggingFace lần đầu |
+| File                          | Kích thước | Ghi chú                                                                                     |
+| ----------------------------- | ---------- | ------------------------------------------------------------------------------------------- |
+| `database/local_chunks.db`    | ~3 GB      | Không commit lên git (đã có trong `.gitignore`)                                             |
+| `database/local_chunks.index` | ~1.2 GB    | FAISS index, tự động tạo khi chạy vector search lần đầu để tăng tốc tìm kiếm. Không commit. |
+| `vietnamese-legal-documents/` | ~vài GB    | Dataset gốc, không commit                                                                   |
+| Model `vietnamese-bi-encoder` | ~500 MB    | Tự động tải từ HuggingFace lần đầu                                                          |
 
 - **Offline hoàn toàn**: Chỉ cần Bước 2–4 + Bước 6 với flag `--local`
 - **Online mode**: Cần thêm Bước 5 và kết nối Supabase

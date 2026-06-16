@@ -122,12 +122,16 @@ class LegalRetriever:
     def _get_model(self):
         """Lazy-load SentenceTransformer model."""
         if self._model is None:
+            import os
+            os.environ["HF_HUB_OFFLINE"] = "1"
             from sentence_transformers import SentenceTransformer
-            print("[retriever] Đang load model bkai-bi-encoder...", flush=True)
+            import torch
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print(f"[retriever] Đang load model bkai-bi-encoder trên device '{device}'...", flush=True)
             t0 = time.time()
             self._model = SentenceTransformer(
                 "bkai-foundation-models/vietnamese-bi-encoder",
-                device="cpu",
+                device=device,
             )
             print(f"[retriever] Model loaded in {time.time()-t0:.1f}s", flush=True)
         return self._model
@@ -162,13 +166,21 @@ class LegalRetriever:
 
     # ── Vector Search ────────────────────────────────────────────────────────────
 
-    def vector_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
+    def vector_search(self, query: str, top_k: Optional[int] = None, gpt_mode: Optional[str] = None) -> List[RetrievalResult]:
         """
         Tìm kiếm theo embedding similarity (cosine).
         Yêu cầu: chunks đã có embedding trong DB.
         """
         k = top_k or self.top_k
-        embedding = self.embed_query(query)
+        
+        # GPT enhancement
+        search_query = query
+        if gpt_mode == "hyde" and self.enhancer.is_active:
+            search_query = self.enhancer.generate_hyde(query)
+        elif gpt_mode == "expand" and self.enhancer.is_active:
+            search_query = self.enhancer.expand_query(query)
+            
+        embedding = self.embed_query(search_query)
         embedding_str = "[" + ",".join(map(str, embedding)) + "]"
 
         sql = """
@@ -196,12 +208,17 @@ class LegalRetriever:
 
     # ── Full-Text Search ─────────────────────────────────────────────────────────
 
-    def fts_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
+    def fts_search(self, query: str, top_k: Optional[int] = None, gpt_mode: Optional[str] = None) -> List[RetrievalResult]:
         """
         Tìm kiếm Full-Text bằng PostgreSQL ts_rank (BM25-style).
         Không cần embedding, hoạt động ngay khi chỉ có content.
         """
         k = top_k or self.top_k
+        
+        # GPT query expansion
+        search_query = query
+        if gpt_mode in ("expand", "hyde") and self.enhancer.is_active:
+            search_query = self.enhancer.expand_query(query)
 
         sql = """
             SELECT
@@ -224,14 +241,14 @@ class LegalRetriever:
         """
         conn = self._get_conn()
         with conn.cursor() as cur:
-            cur.execute(sql, (query, query, k))
+            cur.execute(sql, (search_query, search_query, k))
             rows = cur.fetchall()
 
         return self._rows_to_results(rows, "fts")
 
     # ── Hybrid Search (RRF) ──────────────────────────────────────────────────────
 
-    def hybrid_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
+    def hybrid_search(self, query: str, top_k: Optional[int] = None, gpt_mode: Optional[str] = None) -> List[RetrievalResult]:
         """
         Kết hợp vector + FTS bằng Reciprocal Rank Fusion (RRF).
 
@@ -242,8 +259,12 @@ class LegalRetriever:
         k = top_k or self.top_k
         fetch_k = k * 3   # lấy nhiều hơn để merge
 
-        vector_results = self.vector_search(query, top_k=fetch_k)
-        fts_results    = self.fts_search(query,    top_k=fetch_k)
+        # For hybrid, vector uses the specified gpt_mode (e.g. HyDE), while FTS uses expand if GPT is active
+        vector_gpt_mode = gpt_mode
+        fts_gpt_mode = "expand" if gpt_mode else None
+
+        vector_results = self.vector_search(query, top_k=fetch_k, gpt_mode=vector_gpt_mode)
+        fts_results    = self.fts_search(query,    top_k=fetch_k, gpt_mode=fts_gpt_mode)
 
         # Map chunk_id → RetrievalResult
         chunk_map: dict[str, RetrievalResult] = {}
