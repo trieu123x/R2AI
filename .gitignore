@@ -13,4 +13,5 @@ database/*.index
 
 # BAAI models
 retrieval/bge-reranker-*/
+src/retrieval/bge-reranker-*/
 BAAI/

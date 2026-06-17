@@ -36,10 +36,10 @@ try:
 except ImportError:
     pass
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
-from retrieval.retriever import LegalRetriever
+from src.retrieval.retriever import LegalRetriever
 
 
 import re
@@ -282,7 +282,7 @@ def main():
     
     if args.llm:
         print("\n[batch] === GIAI ĐOẠN 2: KHỞI TẠO LLM VÀ SINH CÂU TRẢ LỜI (GENERATION) ===")
-        from retrieval.qwen_generator import QwenGenerator
+        from src.llm.llm_client import QwenGenerator
         generator = QwenGenerator(model_name=args.llm_model)
         # lazy load model lúc này sẽ có toàn bộ VRAM
         generator._lazy_load()

@@ -14,10 +14,10 @@ import re
 import time
 from typing import List, Optional
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
-from retrieval.retriever import RetrievalResult
+from src.retrieval.retriever import RetrievalResult
 
 def extract_evidence(content: str, article_hint: Optional[str]) -> str:
     """Trích xuất duy nhất phần Điều luật liên quan từ chunk nội dung để tránh nhiễu."""

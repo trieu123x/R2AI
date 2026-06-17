@@ -20,7 +20,7 @@ from pyvi import ViTokenizer
 # ── Config ────────────────────────────────────────────────────────────────────
 MAX_CHARS   = 800
 TEST_N_DOCS = 5          # số document dùng để thử
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REPORT_PATH  = os.path.join(PROJECT_ROOT, "logs", "chunk_test_report.txt")
 
 # ── Filters (giống process_chunks.py) ─────────────────────────────────────────

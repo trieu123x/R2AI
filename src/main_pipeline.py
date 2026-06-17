@@ -2,16 +2,16 @@ import os
 import sys
 
 # Ensure project root is in path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.pipeline.query_rewrite import QueryRewriter
-from src.pipeline.retriever import PipelineRetriever
-from src.pipeline.reranker import PipelineReranker
-from src.pipeline.context_compressor import ContextCompressor
-from src.pipeline.generator import PipelineGenerator
-from src.pipeline.validator import PipelineValidator
+from src.retrieval.query_rewrite import QueryRewriter
+from src.retrieval.pipeline_retriever import PipelineRetriever
+from src.retrieval.reranker import PipelineReranker
+from src.utils.context_compressor import ContextCompressor
+from src.llm.generator import PipelineGenerator
+from src.utils.validator import PipelineValidator
 
 class LegalRAGPipeline:
     """

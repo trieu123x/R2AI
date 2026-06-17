@@ -1,14 +1,17 @@
+import os
 import time
 import sys
 import io
+import traceback
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, PROJECT_ROOT)
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-import traceback
-
 try:
-    from retrieval.local_retriever import LocalRetriever
-    from retrieval.qwen_generator import QwenGenerator
+    from src.retrieval.local_retriever import LocalRetriever
+    from src.llm.llm_client import QwenGenerator
 
     query = "Nếu công ty giữ bản chính bằng cấp của nhân viên khi ký hợp đồng thì sẽ bị xử lý như thế nào và phải khắc phục ra sao?"
 

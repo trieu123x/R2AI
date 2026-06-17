@@ -17,7 +17,7 @@ with open("test_questions.json", "w", encoding="utf-8") as f:
 
 print("Created test_questions.json. Running batch_retrieve.py...")
 cmd = [
-    sys.executable, "-u", "retrieval/batch_retrieve.py",
+    sys.executable, "-u", "src/retrieval/batch_retrieve.py",
     "--input", "test_questions.json",
     "--output", "test_results.json",
     "--mode", "hybrid",

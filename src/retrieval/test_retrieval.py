@@ -37,10 +37,10 @@ def _sanitize_query(q: str) -> str:
     """Remove surrogate characters that can appear from encoding issues."""
     return q.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore").strip()
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
-from retrieval.local_retriever import LocalRetriever, RetrievalResult
+from src.retrieval.local_retriever import LocalRetriever, RetrievalResult
 
 
 # ─── ANSI Colors ───────────────────────────────────────────────────────────────
@@ -174,7 +174,7 @@ def run_benchmark(retriever: LocalRetriever, query: str, top_k: int):
 def run_interactive(args):
     use_postgres = getattr(args, "postgres", False)
     if not use_postgres:
-        from retrieval.retriever import LegalRetriever
+        from src.retrieval.retriever import LegalRetriever
         retriever = LegalRetriever(
             top_k=args.top_k,
             vector_weight=args.vector_weight,
@@ -184,7 +184,7 @@ def run_interactive(args):
         )
         backend = "LOCAL (SQLite)"
     else:
-        from retrieval.retriever import LegalRetriever
+        from src.retrieval.retriever import LegalRetriever
         retriever = LegalRetriever(
             top_k=args.top_k,
             vector_weight=args.vector_weight,
@@ -197,7 +197,7 @@ def run_interactive(args):
     # Khởi tạo Generator nếu chọn sinh câu trả lời
     generator = None
     if getattr(args, "llm", False):
-        from retrieval.qwen_generator import QwenGenerator
+        from src.llm.llm_client import QwenGenerator
         generator = QwenGenerator(model_name=getattr(args, "llm_model", "Qwen/Qwen3-8B-Instruct"))
 
     print_header()
@@ -270,7 +270,7 @@ def run_interactive(args):
                 if new_llm in ("on", "off", "true", "false"):
                     args.llm = new_llm in ("on", "true")
                     if args.llm and generator is None:
-                        from retrieval.qwen_generator import QwenGenerator
+                        from src.llm.llm_client import QwenGenerator
                         generator = QwenGenerator(model_name=getattr(args, "llm_model", "Qwen/Qwen3-8B-Instruct"))
                     print(colorize(f"  [OK] Da doi llm -> {str(args.llm).upper()}", C.GREEN))
                 else:
