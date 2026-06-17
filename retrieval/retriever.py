@@ -671,6 +671,128 @@ class LegalRetriever:
 
     # ── Entry point ─────────────────────────────────────────────────────────────
 
+
+    def expand_query(self, query: str) -> str:
+        """Query Expansion bằng rule-based dictionary."""
+        q_lower = query.lower()
+        expanded_terms = []
+        
+        intents = {
+            "hỗ trợ": ["ưu đãi", "chính sách hỗ trợ", "khuyến khích"],
+            "ưu đãi": ["miễn", "giảm", "hỗ trợ"],
+            "miễn": ["giảm", "không phải nộp", "ưu đãi"],
+            "giảm": ["miễn", "ưu đãi thuế"],
+            "đất đai": ["tiền thuê đất", "tiền sử dụng đất", "mặt bằng", "đất"],
+            "thuế": ["thuế thu nhập doanh nghiệp", "thuế tndn", "miễn thuế", "giảm thuế"]
+        }
+        
+        for k, v in intents.items():
+            if k in q_lower:
+                expanded_terms.extend(v)
+                
+        if expanded_terms:
+            new_terms = [t for t in expanded_terms if t not in q_lower]
+            if new_terms:
+                return query + " " + " ".join(new_terms)
+        return query
+
+    def expand_to_parent_article(self, results: list) -> list:
+        """Parent Retrieval: Lấy toàn bộ nội dung của Điều luật từ các chunk ban đầu."""
+        if not results:
+            return []
+            
+        target_articles = {}
+        hit_indexes = {}
+        for r in results:
+            if not r.article_hint:
+                continue
+            doc_id = r.document_id
+            if doc_id not in target_articles:
+                target_articles[doc_id] = set()
+            target_articles[doc_id].add(r.article_hint)
+            
+            # Ghi nhớ vị trí chunk_index đã hit
+            key = (doc_id, r.article_hint)
+            if key not in hit_indexes:
+                hit_indexes[key] = set()
+            hit_indexes[key].add(r.chunk_index)
+            
+        if not target_articles:
+            return results
+            
+        doc_ids = list(target_articles.keys())
+        conn = self._get_conn()
+        cur = conn.cursor()
+        
+        placeholders = ",".join("?" for _ in doc_ids)
+        cur.execute(f"""
+            SELECT document_id, chunk_index, content
+            FROM document_chunks
+            WHERE document_id IN ({placeholders})
+            ORDER BY document_id, chunk_index
+        """, doc_ids)
+        
+        all_chunks = cur.fetchall()
+        
+        doc_chunks = {}
+        for row in all_chunks:
+            did = row["document_id"]
+            if did not in doc_chunks:
+                doc_chunks[did] = []
+            doc_chunks[did].append(row)
+            
+        expanded_articles = {}
+        
+        for did, rows in doc_chunks.items():
+            current_article = None
+            for row in rows:
+                content = row["content"] or ""
+                # Import extract_article_hint dynamically or rely on global
+                from retriever import extract_article_hint
+                hint = extract_article_hint(content)
+                if hint:
+                    current_article = hint
+                
+                if current_article and current_article in target_articles[did]:
+                    key = (did, current_article)
+                    
+                    # Windowing limit: Chỉ gộp nếu chunk nằm gần vị trí hit (+/- 2 chunks)
+                    # Chống phình to context đối với các Điều omnibus (VD: "sửa đổi, bổ sung một số điều")
+                    hits = hit_indexes.get(key, set())
+                    is_near_hit = False
+                    for h in hits:
+                        if abs(h - row["chunk_index"]) <= 2:
+                            is_near_hit = True
+                            break
+                            
+                    if is_near_hit:
+                        if key not in expanded_articles:
+                            expanded_articles[key] = []
+                        expanded_articles[key].append(content)
+                    
+        final_results = []
+        seen_keys = set()
+        
+        for r in results:
+            if not r.article_hint:
+                final_results.append(r)
+                continue
+                
+            key = (r.document_id, r.article_hint)
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            
+            if key in expanded_articles:
+                full_content = "\n...\n".join(expanded_articles[key])
+                r.content = full_content
+                r.source += "_parent_expanded"
+                final_results.append(r)
+            else:
+                final_results.append(r)
+                
+        return final_results
+
     def retrieve(
         self,
         query: str,
@@ -681,20 +803,23 @@ class LegalRetriever:
         t0 = time.time()
         k = top_k or self.top_k
         
-        # 1. Truy xuất danh sách ứng viên (candidate pool)
+        # 1. Query Expansion (Intent Understanding)
+        expanded_query = self.expand_query(query)
+        
+        # 2. Truy xuất danh sách ứng viên (candidate pool)
         if rerank:
-            fetch_k = 50  # Tăng lên 50 để lấy nhiều chunks ứng viên
+            fetch_k = 50
         else:
             fetch_k = max(50, k * 4)
         
         if mode == "vector":
-            results = self.vector_search(query, top_k=fetch_k)
+            results = self.vector_search(expanded_query, top_k=fetch_k)
         elif mode == "fts":
-            results = self.fts_search(query, top_k=fetch_k)
+            results = self.fts_search(expanded_query, top_k=fetch_k)
         else:
-            results = self.hybrid_search(query, top_k=fetch_k)
+            results = self.hybrid_search(expanded_query, top_k=fetch_k)
             
-        # 2. Tiến hành lọc trùng lặp trước để loại bỏ nhiễu
+        # 3. Tiến hành lọc trùng lặp trước để loại bỏ nhiễu
         unique_results = []
         for r in results:
             is_dup = False
@@ -705,46 +830,40 @@ class LegalRetriever:
             if not is_dup:
                 unique_results.append(r)
                 
-        # 2.5. Aggregate chunks into articles
-        grouped = {}
-        for r in unique_results:
-            key = (r.document_id, r.article_hint)
-            if key not in grouped:
-                grouped[key] = []
-            grouped[key].append(r)
-            
-        article_results = []
-        for key, chunks in grouped.items():
-            chunks.sort(key=lambda x: x.chunk_index)
-            base_chunk = chunks[0]
-            if len(chunks) == 1 or not base_chunk.article_hint:
-                article_results.append(base_chunk)
-            else:
-                combined_content = "\n...\n".join([c.content for c in chunks])
-                max_score = max([c.score for c in chunks])
-                
-                new_res = RetrievalResult(
-                    chunk_id=base_chunk.chunk_id,
-                    document_id=base_chunk.document_id,
-                    chunk_index=base_chunk.chunk_index,
-                    content=combined_content,
-                    doc_number=base_chunk.doc_number,
-                    title=base_chunk.title,
-                    legal_type=base_chunk.legal_type,
-                    score=max_score,
-                    source=base_chunk.source + "_aggregated",
-                    article_hint=base_chunk.article_hint,
-                )
-                article_results.append(new_res)
-                
-        # 3. Rerank và lọc
+        # 4. Parent Retrieval (Thay thế cho aggregate_chunks_into_articles)
+        article_results = self.expand_to_parent_article(unique_results)
+
+        # 5. Rerank và lọc
         if rerank:
             results = self.rerank(query, article_results, top_k=None)
         else:
             article_results.sort(key=lambda x: x.score, reverse=True)
             results = article_results
 
-        # Query-aware Filter
+        # 4. Áp dụng Absolute & Relative Score Thresholds
+        if results:
+            RERANK_THRESHOLD = 0.15
+            best_score = results[0].score
+            
+            filtered_by_score = []
+            for r in results:
+                # Giữ chunk nếu score >= 0.15 VÀ score >= 50% của best_score (Siết chặt để chống nhiễu)
+                if r.score >= RERANK_THRESHOLD and r.score >= best_score * 0.5:
+                    filtered_by_score.append(r)
+            results = filtered_by_score
+
+        # 5. Article-level Dedup (Giảm context thừa)
+        seen_articles = set()
+        deduped = []
+        for r in results:
+            article_id = r.format_relevant_article()
+            if article_id in seen_articles:
+                continue
+            seen_articles.add(article_id)
+            deduped.append(r)
+        results = deduped
+
+        # 6. Intent-aware (Query-aware) Filter
         try:
             import underthesea
             tags = underthesea.pos_tag(query)
@@ -757,11 +876,11 @@ class LegalRetriever:
         filtered_final = []
         for r in results:
             content_lower = r.content.lower()
-            # Chunk phải chứa ít nhất một term quan trọng từ câu hỏi
+            # Chunk phải chứa ít nhất một term quan trọng (intent keywords) từ câu hỏi
             if any(term in content_lower for term in important_terms):
                 filtered_final.append(r)
                 
-        # Fallback nếu filter drop hết tất cả kết quả
+        # Fallback nếu filter quá ngặt nghèo drop hết tất cả kết quả
         if not filtered_final and results:
             filtered_final = results
             
