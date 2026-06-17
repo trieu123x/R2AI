@@ -1,45 +1,40 @@
-STDOUT:
-[batch] 5 questions from test_questions.json
+STDOUT and STDERR:
+[batch] 3 questions from test_questions.json
 [batch] Mode: hybrid | Top-K: 5 | Rerank: True | LLM: True
 ------------------------------------------------------------
 [batch] Backend: LOCAL (SQLite)
-[local][FTS5] Structured query: ("ươm tạo" OR "cơ sở ươm tạo" OR "khu làm việc chung" OR "làm việc chung") AND ("thuế" OR "đất đai" OR "mặt bằng" OR "thuê đất" OR "ưu đãi thuế" OR "tiền sử dụng đất")
+[batch] === GIAI ĐOẠN 1: TRUY XUẤT TÀI LIỆU (RETRIEVAL) ===
+[local][FTS5] Structured query: ("ươm tạo" OR "cơ sở ươm tạo" OR "khu làm việc chung" OR "làm việc chung") AND ("thuế" OR "đất đai" OR "mặt bằng" OR "thuê đất" OR "ưu đãi thuế" OR "tiền sử dụng đất" OR "giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
 [local] Loading bkai-bi-encoder on device 'cuda'...
-[local] Model loaded in 6.6s
+[local] Model loaded in 4.7s
 [local] Loading FAISS index from C:\Users\admin\Downloads\R2AI\database\local_chunks.index...
-[local] FAISS index loaded in 0.73s
-[local] Loading reranker model itdainb/PhoRanker on device 'cuda'...
-[local] Reranker model loaded in 2.0s
-[local] Reranking took 0.70s for 18 pairs.
-[local] mode=hybrid | rerank=True | 5 results | 29.52s
+[local] FAISS index loaded in 1.46s
+[local] Loading reranker model BAAI/bge-reranker-v2-m3 on device 'cuda'...
+[local] Reranker model loaded in 4.0s
+[local] Reranking took 1.36s for 29 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 32.88s
+  [  1/3] id=1 | Reranked/Retrieved | 32.88s
+[local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ") AND ("đấu thầu" OR "nhà thầu" OR "lựa chọn nhà thầu" OR "gói thầu" OR "xếp hạng hồ sơ")
+[local] Reranking took 0.57s for 41 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 1.22s
+  [  2/3] id=2 | Reranked/Retrieved | 1.22s
+[local][FTS5] Structured query: ("người lao động" OR "lao động" OR "nhân viên" OR "hợp đồng lao động") AND ("giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
+[local] Reranking took 0.47s for 31 pairs.
+[local] mode=hybrid | rerank=True | 1 results | 1.87s
+  [  3/3] id=3 | Reranked/Retrieved | 1.87s
+
+[batch] Giải phóng retriever và giải phóng GPU memory...
+
+[batch] === GIAI ĐOẠN 2: KHỞI TẠO LLM VÀ SINH CÂU TRẢ LỜI (GENERATION) ===
 [generator] Đang load model 'Qwen/Qwen2.5-0.5B-Instruct' (Offline=True)...
 [generator] Thiết lập mô hình chạy trên dtype=torch.bfloat16...
-[generator] Model loaded in 2.3s
-  [  1/5] id=1 | 4 docs, 5 articles | LLM Answer: Yes | 77.74s
-[local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ") AND ("đấu thầu" OR "nhà thầu" OR "lựa chọn nhà thầu" OR "gói thầu" OR "xếp hạng hồ sơ")
-[local] Reranking took 0.30s for 17 pairs.
-[local] mode=hybrid | rerank=True | 5 results | 0.80s
-  [  2/5] id=2 | 5 docs, 5 articles | LLM Answer: Yes | 21.02s
-[local][FTS5] Structured query: ("người lao động" OR "lao động" OR "nhân viên" OR "hợp đồng lao động") AND ("giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
-[local] Reranking took 0.40s for 15 pairs.
-[local] mode=hybrid | rerank=True | 5 results | 1.60s
-  [  3/5] id=3 ⚠ Phát hiện lỗi sinh (dẫn chiếu sai các Điều không có trong context: {'20'}) lần 1. Đang sinh lại...
-  [  3/5] id=3 ⚠ Phát hiện lỗi sinh (dẫn chiếu sai các Điều không có trong context: {'20'}) lần 2. Đang sinh lại...
-  [  3/5] id=3 ⚠ Đã thử 2 lần vẫn lỗi. Fallback sang Rule-based.
-  [  3/5] id=3 | 4 docs, 5 articles | LLM Answer: Yes | 65.51s
-[local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ")
-[local] Reranking took 0.30s for 15 pairs.
-[local] mode=hybrid | rerank=True | 5 results | 0.68s
-  [  4/5] id=4 | 2 docs, 3 articles | LLM Answer: Yes | 31.92s
-[local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ") AND ("thuế" OR "đất đai" OR "mặt bằng" OR "thuê đất" OR "ưu đãi thuế" OR "tiền sử dụng đất" OR "giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
-[local] Reranking took 0.28s for 16 pairs.
-[local] mode=hybrid | rerank=True | 5 results | 0.75s
-  [  5/5] id=5 | 4 docs, 4 articles | LLM Answer: Yes | 19.14s
+[generator] Model loaded in 2.1s
+  [  1/3] id=1 | 5 docs, 5 articles | LLM Answer: Yes | 111.42s
+  [  2/3] id=2 | 4 docs, 5 articles | LLM Answer: Yes | 56.86s
+  [  3/3] id=3 | 1 docs, 1 articles | LLM Answer: Yes | 19.66s
 ------------------------------------------------------------
-[batch] ✓ Xong! 5 câu | avg 43.07s/câu
+[batch] ✓ Xong! 3 câu | avg 62.65s/câu
 [batch] ✓ Đã ghi → test_results.json
 
 Để nén và nộp bài:
   Compress-Archive -Path test_results.json -DestinationPath submission.zip
-
-STDERR:

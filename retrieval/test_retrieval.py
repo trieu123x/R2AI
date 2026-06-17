@@ -172,14 +172,27 @@ def run_benchmark(retriever: LocalRetriever, query: str, top_k: int):
 # ─── Main interactive loop ─────────────────────────────────────────────────────
 
 def run_interactive(args):
-    from retrieval.local_retriever import LocalRetriever
-    retriever = LocalRetriever(
-        top_k=args.top_k,
-        vector_weight=args.vector_weight,
-        fts_weight=args.fts_weight,
-        rrf_k=args.rrf_k,
-    )
-    backend = "LOCAL (SQLite)"
+    use_postgres = getattr(args, "postgres", False)
+    if not use_postgres:
+        from retrieval.retriever import LegalRetriever
+        retriever = LegalRetriever(
+            top_k=args.top_k,
+            vector_weight=args.vector_weight,
+            fts_weight=args.fts_weight,
+            rrf_k=args.rrf_k,
+            use_postgres=False,
+        )
+        backend = "LOCAL (SQLite)"
+    else:
+        from retrieval.retriever import LegalRetriever
+        retriever = LegalRetriever(
+            top_k=args.top_k,
+            vector_weight=args.vector_weight,
+            fts_weight=args.fts_weight,
+            rrf_k=args.rrf_k,
+            use_postgres=True,
+        )
+        backend = "LOCAL POSTGRESQL"
 
     # Khởi tạo Generator nếu chọn sinh câu trả lời
     generator = None
@@ -406,8 +419,10 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Kích hoạt mô hình sinh câu trả lời bằng LLM local")
     p.add_argument("--llm-model", default="Qwen/Qwen2.5-0.5B-Instruct",
                    help="Tên mô hình LLM trên HuggingFace (mặc định: Qwen/Qwen2.5-0.5B-Instruct)")
-    p.add_argument("--local", "-l", action="store_true",
-                   help="Dung local SQLite thay vi Supabase (offline mode)")
+    p.add_argument("--local", "-l", action="store_true", default=True,
+                   help="Dung local SQLite thay vi Supabase (offline mode) (mac dinh: BAT)")
+    p.add_argument("--postgres", action="store_true", default=False,
+                   help="Dung Supabase/PostgreSQL (mac dinh: TAT)")
     return p
 
 

@@ -31,11 +31,12 @@ def extract_evidence(content: str, article_hint: Optional[str]) -> str:
     if not article_hint:
         return content.strip()
 
-    match_num = re.search(r'\d+', article_hint)
+    # Hỗ trợ tìm kiếm cả số và chữ cái hậu tố (Ví dụ: 15, 15a, 15b)
+    match_num = re.search(r'(\d+[a-zA-Z]?)', article_hint)
     if not match_num:
         return content.strip()
 
-    art_num = match_num.group()
+    art_num = match_num.group(1)
     
     pattern = re.compile(rf'^\s*Điều\s+{art_num}\b', re.MULTILINE | re.IGNORECASE)
     match = pattern.search(content)
@@ -85,7 +86,8 @@ class QwenGenerator:
             self._tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name,
                 trust_remote_code=True,
-                local_files_only=is_offline
+                local_files_only=is_offline,
+                use_fast=False
             )
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -137,9 +139,6 @@ class QwenGenerator:
         
         context = "\n\n=========================================\n\n".join(context_parts)
 
-        if warning_msg:
-            context = warning_msg + "\n\n" + context
-
         # Hệ thống Prompt hướng dẫn cực kỳ rõ ràng cho Qwen
         system_prompt = (
             "Bạn là một trợ lý pháp lý Việt Nam chuyên nghiệp, chính xác và đáng tin cậy.\n\n"
@@ -162,6 +161,7 @@ class QwenGenerator:
             f"=========================================\n"
             f"{context}\n"
             f"=========================================\n\n"
+            f"{f'LƯU Ý QUAN TRỌNG TỪ HỆ THỐNG: {warning_msg}\n\n' if warning_msg else ''}"
             f"CÂU HỎI: {query}\n\n"
             f"Yêu cầu trả lời: Hãy phân tích kỹ tài liệu tham khảo trên và trả lời câu hỏi tuân thủ đúng cấu trúc 4 phần nêu trên.\n"
         )
@@ -207,7 +207,7 @@ class QwenGenerator:
             **inputs,
             max_new_tokens=max_new_tokens,
             do_sample=False,
-            repetition_penalty=1.15,
+            repetition_penalty=1.05,
             pad_token_id=self._tokenizer.eos_token_id
         )
 

@@ -7,19 +7,18 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from retrieval.local_retriever import LocalRetriever
-from retrieval.retriever import RetrievalResult
+from retrieval.retriever import LegalRetriever, RetrievalResult
 
 class PipelineRetriever:
     """
     Step 3: BM25 (top 10) + Embedding (top 10)
     Step 4: Merge
     """
-    def __init__(self, db_path=None, top_k_each=50):
+    def __init__(self, db_path=None, top_k_each=50, use_postgres=False):
         if db_path:
-            self.retriever = LocalRetriever(db_path=db_path)
+            self.retriever = LegalRetriever(db_path=db_path, use_postgres=use_postgres)
         else:
-            self.retriever = LocalRetriever()
+            self.retriever = LegalRetriever(use_postgres=use_postgres)
         self.top_k_each = top_k_each
 
     def retrieve_and_merge(self, query: str) -> List[RetrievalResult]:

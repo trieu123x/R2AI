@@ -23,8 +23,9 @@ class Config:
             if not getattr(cls, attr):
                 missing.append(attr)
         if missing:
-            raise ValueError(f"Missing configuration variables in environment: {', '.join(missing)}")
-        print("Configuration is valid.")
+            print(f"[warning] Missing configuration variables in environment (not needed for local SQLite mode): {', '.join(missing)}")
+        else:
+            print("Configuration is valid.")
 
 if __name__ == "__main__":
     try:

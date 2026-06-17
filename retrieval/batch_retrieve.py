@@ -23,6 +23,10 @@ if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
+
+
+
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -177,8 +181,10 @@ def main():
     parser.add_argument("--vector-weight", type=float, default=0.5)
     parser.add_argument("--fts-weight", type=float, default=0.5)
     parser.add_argument("--rrf-k", type=int, default=60)
-    parser.add_argument("--local", "-l", action="store_true",
-                        help="Dung local SQLite thay vi Supabase (offline mode)")
+    parser.add_argument("--local", "-l", action="store_true", default=True,
+                        help="Dung local SQLite thay vi Supabase (offline mode) (mac dinh: BAT)")
+    parser.add_argument("--postgres", action="store_true", default=False,
+                        help="Dung Supabase/PostgreSQL (mac dinh: TAT)")
     parser.add_argument("--rerank", "-r", action="store_true", default=True,
                         help="Kích hoạt Reranker PhoRanker để tăng độ chính xác tìm kiếm (mặc định: BẬT)")
     parser.add_argument("--no-rerank", dest="rerank", action="store_false",
@@ -201,44 +207,36 @@ def main():
     print("-" * 60)
 
     # Chọn retriever
-    if getattr(args, "local", False):
-        from retrieval.local_retriever import LocalRetriever
-        retriever = LocalRetriever(
-            top_k=args.top_k,
-            vector_weight=args.vector_weight,
-            fts_weight=args.fts_weight,
-            rrf_k=args.rrf_k,
-        )
-        print("[batch] Backend: LOCAL (SQLite)")
-    else:
+    use_postgres = getattr(args, "postgres", False)
+    if use_postgres:
         try:
             retriever = LegalRetriever(
                 top_k=args.top_k,
                 vector_weight=args.vector_weight,
                 fts_weight=args.fts_weight,
                 rrf_k=args.rrf_k,
+                use_postgres=True,
             )
-            retriever._get_conn()
-            print("[batch] Backend: SUPABASE")
+            retriever._get_pg_conn()
+            print("[batch] Backend: LOCAL POSTGRESQL")
         except Exception as e:
-            print(f"[batch] Supabase failed ({e}), using LOCAL SQLite")
-            from retrieval.local_retriever import LocalRetriever
-            retriever = LocalRetriever(
-                top_k=args.top_k,
-                vector_weight=args.vector_weight,
-                fts_weight=args.fts_weight,
-                rrf_k=args.rrf_k,
-            )
+            print(f"[batch] Local PostgreSQL failed ({e}), using LOCAL SQLite")
+            use_postgres = False
 
-    # Khởi tạo Generator nếu chọn sinh câu trả lời
-    generator = None
-    if args.llm:
-        from retrieval.qwen_generator import QwenGenerator
-        generator = QwenGenerator(model_name=args.llm_model)
+    if not use_postgres:
+        retriever = LegalRetriever(
+            top_k=args.top_k,
+            vector_weight=args.vector_weight,
+            fts_weight=args.fts_weight,
+            rrf_k=args.rrf_k,
+            use_postgres=False,
+        )
+        print("[batch] Backend: LOCAL (SQLite)")
 
-    submission = []
-    total_time = 0.0
-
+    # 1. Giai đoạn 1: Truy xuất tài liệu cho tất cả các câu hỏi
+    print("[batch] === GIAI ĐOẠN 1: TRUY XUẤT TÀI LIỆU (RETRIEVAL) ===")
+    retrieved_data = []
+    
     for idx, q in enumerate(questions, start=1):
         qid = q.get("id", idx)
         question = q.get("question", "")
@@ -249,20 +247,57 @@ def main():
 
         t0 = time.time()
         try:
-            # Truy xuất thông tin (Kèm rerank nếu bật)
             results = retriever.retrieve(
                 question, 
                 mode=args.mode, 
                 top_k=args.top_k, 
                 rerank=args.rerank
             )
-            
-            # Sinh câu trả lời (Dùng Qwen nếu bật, ngược lại dùng Rule-based để trích dẫn trực tiếp)
-            answer = ""
-            if generator is not None:
-                # Chỉ lấy 5 đoạn trích xuất tốt nhất làm ngữ cảnh để không vượt quá context window
+            elapsed = time.time() - t0
+            retrieved_data.append((qid, question, results, elapsed))
+            print(f"  [{idx:3d}/{len(questions)}] id={qid} | Reranked/Retrieved | {elapsed:.2f}s")
+        except Exception as e:
+            elapsed = time.time() - t0
+            print(f"  [{idx:3d}/{len(questions)}] id={qid} ✗ LỖI RETRIEVAL: {e} ({elapsed:.2f}s)", flush=True)
+            retrieved_data.append((qid, question, [], elapsed))
+
+    # Giải phóng hoàn toàn Retriever và các model nhúng, reranker trên GPU
+    print("\n[batch] Giải phóng retriever và giải phóng GPU memory...")
+    if hasattr(retriever, '_model'):
+        del retriever._model
+    if hasattr(retriever, '_reranker'):
+        del retriever._reranker
+    retriever.close()
+    del retriever
+    
+    import gc
+    import torch
+    gc.collect()
+    torch.cuda.empty_cache()
+    time.sleep(1) # Chờ 1 giây để GPU giải phóng hoàn toàn
+    
+    # 2. Giai đoạn 2: Khởi tạo Generator và sinh câu trả lời
+    submission = []
+    total_time = 0.0
+    
+    if args.llm:
+        print("\n[batch] === GIAI ĐOẠN 2: KHỞI TẠO LLM VÀ SINH CÂU TRẢ LỜI (GENERATION) ===")
+        from retrieval.qwen_generator import QwenGenerator
+        generator = QwenGenerator(model_name=args.llm_model)
+        # lazy load model lúc này sẽ có toàn bộ VRAM
+        generator._lazy_load()
+        
+        for idx, (qid, question, results, r_time) in enumerate(retrieved_data, start=1):
+            if not results:
+                entry = build_submission_entry(qid, question, [], answer="Không tìm thấy tài liệu luật pháp liên quan.")
+                submission.append(entry)
+                continue
+                
+            t0 = time.time()
+            try:
                 max_retries = 2
                 warning_msg = None
+                answer = ""
                 for attempt in range(max_retries):
                     answer = generator.generate_answer(question, results[:5], warning_msg=warning_msg)
                     is_valid, err_msg = validate_citations_detailed(answer, results[:5])
@@ -274,33 +309,41 @@ def main():
                 else:
                     print(f"  [{idx:3d}/{len(questions)}] id={qid} ⚠ Đã thử {max_retries} lần vẫn lỗi. Fallback sang Rule-based.")
                     answer = generate_rule_based_answer(results)
-            else:
-                answer = generate_rule_based_answer(results)
-
-            elapsed = time.time() - t0
+                
+                elapsed = time.time() - t0 + r_time
+                total_time += elapsed
+                
+                entry = build_submission_entry(qid, question, results, answer=answer)
+                submission.append(entry)
+                
+                docs_count = len(entry["relevant_docs"])
+                arts_count = len(entry["relevant_articles"])
+                print(f"  [{idx:3d}/{len(questions)}] id={qid} | "
+                      f"{docs_count} docs, {arts_count} articles | LLM Answer: Yes | {elapsed:.2f}s")
+                      
+            except Exception as e:
+                elapsed = time.time() - t0 + r_time
+                total_time += elapsed
+                print(f"  [{idx:3d}/{len(questions)}] id={qid} ✗ LỖI LLM: {e} ({elapsed:.2f}s)", flush=True)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+                sys.stderr.flush()
+                submission.append(build_submission_entry(qid, question, results, answer=""))
+    else:
+        print("\n[batch] === GIAI ĐOẠN 2: SINH CÂU TRẢ LỜI RULE-BASED ===")
+        for idx, (qid, question, results, r_time) in enumerate(retrieved_data, start=1):
+            t0 = time.time()
+            answer = generate_rule_based_answer(results)
+            elapsed = time.time() - t0 + r_time
             total_time += elapsed
-
+            
             entry = build_submission_entry(qid, question, results, answer=answer)
             submission.append(entry)
-
+            
             docs_count = len(entry["relevant_docs"])
             arts_count = len(entry["relevant_articles"])
-            has_ans = "Yes" if answer else "No"
             print(f"  [{idx:3d}/{len(questions)}] id={qid} | "
-                  f"{docs_count} docs, {arts_count} articles | LLM Answer: {has_ans} | {elapsed:.2f}s")
-
-        except Exception as e:
-            elapsed = time.time() - t0
-            print(f"  [{idx:3d}/{len(questions)}] id={qid} ✗ LỖI: {e} ({elapsed:.2f}s)")
-            submission.append({
-                "id": qid,
-                "question": question,
-                "answer": "",
-                "relevant_docs": [],
-                "relevant_articles": [],
-            })
-
-    retriever.close()
+                  f"{docs_count} docs, {arts_count} articles | Rule Answer | {elapsed:.2f}s")
 
     # Ghi output
     with open(args.output, "w", encoding="utf-8") as f:

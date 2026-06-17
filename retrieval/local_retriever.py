@@ -154,9 +154,9 @@ class LocalRetriever:
                 cur = self._conn.cursor()
                 cur.execute("PRAGMA journal_mode=WAL;")
                 cur.execute("PRAGMA synchronous=OFF;")
-                cur.execute("PRAGMA cache_size=-2000000;") # 2GB cache
+                cur.execute("PRAGMA cache_size=-100000;") # 100MB cache
                 cur.execute("PRAGMA temp_store=MEMORY;")
-                cur.execute("PRAGMA mmap_size=3000000000;") # 3GB memory map
+                cur.execute("PRAGMA mmap_size=500000000;") # 500MB memory map
             except Exception as e:
                 print(f"[local] Warning: Failed to apply SQLite PRAGMAs: {e}")
         return self._conn
@@ -561,13 +561,24 @@ class LocalRetriever:
         if self._reranker is None:
             import torch
             from sentence_transformers import CrossEncoder
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            print(f"[local] Loading reranker model BAAI/bge-reranker-v2-m3 on device '{device}'...", flush=True)
-            t0 = time.time()
-            self._reranker = CrossEncoder("./bge-reranker-v2-m3", device=device)
-            # Optimize memory if using CUDA
-            if device == "cuda" and hasattr(self._reranker.model, "half"):
-                self._reranker.model.half()
+            model_path = os.path.join(os.path.dirname(__file__), "bge-reranker-v2-m3")
+            print(f"DEBUG: model_path={model_path}", flush=True)
+            try:
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                print(f"[local] Loading reranker model BAAI/bge-reranker-v2-m3 on device '{device}'...", flush=True)
+                t0 = time.time()
+                automodel_args = {}
+                if device == "cuda":
+                    automodel_args = {
+                        "torch_dtype": torch.float16,
+                        "low_cpu_mem_usage": True
+                    }
+                self._reranker = CrossEncoder(model_path, device=device, automodel_args=automodel_args)
+            except BaseException as e:
+                print(f"FATAL EXCEPTION in CrossEncoder: {type(e)} - {e}", flush=True)
+                import traceback
+                traceback.print_exc()
+                raise
             print(f"[local] Reranker model loaded in {time.time()-t0:.1f}s", flush=True)
             
         pairs = []
@@ -732,8 +743,7 @@ class LocalRetriever:
             current_article = None
             for row in rows:
                 content = row["content"] or ""
-                # Import extract_article_hint dynamically or rely on global
-                from retriever import extract_article_hint
+                # Rely on global extract_article_hint
                 hint = extract_article_hint(content)
                 if hint:
                     current_article = hint

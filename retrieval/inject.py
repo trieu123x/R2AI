@@ -73,8 +73,7 @@ functions_code = '''
             current_article = None
             for row in rows:
                 content = row["content"] or ""
-                # Import extract_article_hint dynamically or rely on global
-                from retriever import extract_article_hint
+                # Rely on global extract_article_hint
                 hint = extract_article_hint(content)
                 if hint:
                     current_article = hint

@@ -65,16 +65,12 @@ class PipelineGenerator:
 
         self._lazy_load()
 
-        if warning_msg:
-            context = warning_msg + "\n\n" + context
-
         system_prompt = (
             "Bạn là một trợ lý pháp lý Việt Nam chuyên nghiệp, chính xác và đáng tin cậy.\n\n"
             "Nhiệm vụ của bạn:\n"
             "- Trả lời câu hỏi dựa trên CÁC CĂN CỨ PHÁP LÝ ĐƯỢC CUNG CẤP. Tuyệt đối không tự suy diễn hoặc giả định các nội dung không có trong tài liệu.\n"
             "- Hãy viết hoàn toàn bằng tiếng Việt chuẩn mực. Tuyệt đối KHÔNG trộn lẫn tiếng Trung (chữ Hán), tiếng Anh hoặc bất kỳ từ ngữ nước ngoài nào khác.\n"
             "- Tuyệt đối KHÔNG được tự bịa ra các số hiệu văn bản, điều luật không có trong các căn cứ pháp lý.\n"
-            "- Tuyệt đối KHÔNG sử dụng tên văn bản, điều luật hoặc các từ ngữ trong Ví dụ mẫu (Few-shot) như 'Nghị định X', 'quyền công đoàn', 'thành lập công đoàn' để trả lời cho câu hỏi thực tế.\n"
             "- Cực kỳ cẩn thận với các từ phủ định hoặc hành vi cấm.\n"
             "- Không chỉ nêu tên văn bản chung chung. Hãy giải thích cụ thể nội dung.\n\n"
             "Bạn BẮT BUỘC phải trình bày câu trả lời của mình nghiêm ngặt theo cấu trúc 4 phần sau:\n"
@@ -89,6 +85,7 @@ class PipelineGenerator:
             f"=========================================\n"
             f"{context}\n"
             f"=========================================\n\n"
+            f"{f'LƯU Ý QUAN TRỌNG TỪ HỆ THỐNG: {warning_msg}\n\n' if warning_msg else ''}"
             f"CÂU HỎI: {query}\n\n"
             f"Yêu cầu trả lời: Hãy phân tích kỹ tài liệu tham khảo trên và trả lời câu hỏi tuân thủ đúng cấu trúc 4 phần nêu trên.\n"
         )
@@ -110,7 +107,7 @@ class PipelineGenerator:
             **inputs,
             max_new_tokens=max_new_tokens,
             do_sample=False,
-            repetition_penalty=1.15,
+            repetition_penalty=1.05,
             pad_token_id=self._tokenizer.eos_token_id
         )
 

@@ -130,17 +130,59 @@ class LegalRetriever:
         vector_weight: float = 0.3,
         fts_weight: float = 0.7,
         rrf_k: int = 60,
+        use_postgres: bool = False,
+        pg_conn_str: Optional[str] = None
     ):
         self.db_path = db_path
         self.top_k = top_k
         self.vector_weight = vector_weight
         self.fts_weight = fts_weight
         self.rrf_k = rrf_k
+        self.use_postgres = use_postgres
+        
+        if pg_conn_str is None:
+            import os
+            try:
+                from dotenv import load_dotenv
+                # Load .env from project root if it exists
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                project_root = os.path.dirname(current_dir)
+                env_path = os.path.join(project_root, '.env')
+                if os.path.exists(env_path):
+                    load_dotenv(dotenv_path=env_path)
+                else:
+                    load_dotenv()
+            except ImportError:
+                pass
+            pg_conn_str = os.getenv("DATABASE_URL")
+            if not pg_conn_str:
+                pg_conn_str = "postgresql://postgres:Trieudh.1@localhost:5432/law_vn"
+                
+        self.pg_conn_str = pg_conn_str
         self._conn: Optional[sqlite3.Connection] = None
+        self._pg_conn = None
         self._model = None
         self._reranker = None
 
     # ── Kết nối ─────────────────────────────────────────────────────────────────
+
+    def _get_pg_conn(self):
+        if self._pg_conn is None:
+            import psycopg2
+            try:
+                self._pg_conn = psycopg2.connect(self.pg_conn_str)
+            except psycopg2.OperationalError as e:
+                local_fallback = "postgresql://postgres:Trieudh.1@localhost:5432/law_vn"
+                if self.pg_conn_str != local_fallback:
+                    print(f"[local] Failed to connect to pg_conn_str ({self.pg_conn_str}): {e}. Falling back to localhost PostgreSQL...", flush=True)
+                    try:
+                        self._pg_conn = psycopg2.connect(local_fallback)
+                        self.pg_conn_str = local_fallback
+                        return self._pg_conn
+                    except Exception as fallback_err:
+                        print(f"[local] Fallback to localhost PostgreSQL also failed: {fallback_err}", flush=True)
+                raise e
+        return self._pg_conn
 
     def _get_conn(self) -> sqlite3.Connection:
         if self._conn is None:
@@ -165,6 +207,9 @@ class LegalRetriever:
         if self._conn:
             self._conn.close()
             self._conn = None
+        if self._pg_conn:
+            self._pg_conn.close()
+            self._pg_conn = None
 
     # ── Embedding model ─────────────────────────────────────────────────────────
 
@@ -211,12 +256,216 @@ class LegalRetriever:
 
     # ── FTS Search ──────────────────────────────────────────────────────────────
 
+    def fts_search_pg(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
+        def sqlite_phrase_to_pg_tsquery(phrase: str) -> str:
+            phrase = phrase.strip('"')
+            words = [w.strip() for w in phrase.split() if w.strip()]
+            if len(words) == 1:
+                return f"'{words[0]}'"
+            return "(" + " <-> ".join(f"'{w}'" for w in words) + ")"
+
+        k = top_k or self.top_k
+        conn = self._get_pg_conn()
+        cur = conn.cursor()
+        results = []
+
+        # 1. Try structured AND/OR query
+        q_lower = query.lower()
+        subjects = {
+            "incubator_coworking": {
+                "keywords": ["ươm tạo", "làm việc chung"],
+                "syns": ['"ươm tạo"', '"cơ sở ươm tạo"', '"khu làm việc chung"', '"làm việc chung"']
+            },
+            "sme": {
+                "keywords": ["doanh nghiệp nhỏ và vừa", "nhỏ và vừa", "sme", "siêu nhỏ"],
+                "syns": ['"doanh nghiệp nhỏ và vừa"', '"nhỏ và vừa"', '"doanh nghiệp nhỏ"', '"doanh nghiệp siêu nhỏ"']
+            },
+            "labor": {
+                "keywords": ["nhân viên", "lao động", "người lao động", "thử việc", "ký hợp đồng", "sa thải", "đuổi việc", "nghỉ việc", "lương"],
+                "syns": ['"người lao động"', '"lao động"', '"nhân viên"', '"hợp đồng lao động"']
+            }
+        }
+        
+        topics = {
+            "tax_land": {
+                "keywords": ["thuế", "đất đai", "mặt bằng", "tiền thuê"],
+                "syns": ['"thuế"', '"đất đai"', '"mặt bằng"', '"thuê đất"', '"ưu đãi thuế"', '"tiền sử dụng đất"']
+            },
+            "bidding": {
+                "keywords": ["đấu thầu", "nhà thầu", "gói thầu"],
+                "syns": ['"đấu thầu"', '"nhà thầu"', '"lựa chọn nhà thầu"', '"gói thầu"', '"xếp hạng hồ sơ"']
+            },
+            "degrees_holding": {
+                "keywords": ["giữ", "bằng", "văn bằng", "chứng chỉ", "giấy tờ", "bằng cấp"],
+                "syns": ['"giữ"', '"thu giữ"', '"tạm giữ"', '"văn bằng"', '"chứng chỉ"', '"giấy tờ tùy thân"', '"bản chính"', '"bằng cấp"']
+            }
+        }
+
+        active_subjects = []
+        for s_name, s_info in subjects.items():
+            if any(kw in q_lower for kw in s_info["keywords"]):
+                active_subjects.append(s_info["syns"])
+                
+        active_topics = []
+        for t_name, t_info in topics.items():
+            if any(kw in q_lower for kw in t_info["keywords"]):
+                active_topics.append(t_info["syns"])
+                
+        clauses = []
+        if active_subjects:
+            flat_subjects = []
+            for s in active_subjects:
+                flat_subjects.extend(s)
+            flat_subjects = list(dict.fromkeys(flat_subjects))
+            pg_terms = [sqlite_phrase_to_pg_tsquery(t) for t in flat_subjects]
+            clauses.append("(" + " | ".join(pg_terms) + ")")
+            
+        if active_topics:
+            flat_topics = []
+            for t in active_topics:
+                flat_topics.extend(t)
+            flat_topics = list(dict.fromkeys(flat_topics))
+            pg_terms = [sqlite_phrase_to_pg_tsquery(t) for t in flat_topics]
+            clauses.append("(" + " | ".join(pg_terms) + ")")
+
+        if clauses:
+            fts_expr = " & ".join(clauses)
+            print(f"[local][FTS-PG] Structured query: {fts_expr}", flush=True)
+            try:
+                cur.execute("""
+                    SELECT c.id, c.document_id, c.chunk_index, c.content, 
+                           ts_rank(to_tsvector('simple', c.content), to_tsquery('simple', %s)) AS score,
+                           d.document_number, d.title, d.legal_type
+                    FROM document_chunks c
+                    JOIN documents d ON c.document_id = d.id
+                    WHERE to_tsvector('simple', c.content) @@ to_tsquery('simple', %s)
+                    ORDER BY score DESC
+                    LIMIT %s;
+                """, (fts_expr, fts_expr, k))
+                rows = cur.fetchall()
+                for row in rows:
+                    cid, doc_id, chunk_idx, content, score, doc_number, title, legal_type = row
+                    results.append(RetrievalResult(
+                        chunk_id=str(cid),
+                        document_id=doc_id,
+                        chunk_index=chunk_idx,
+                        content=content,
+                        doc_number=doc_number,
+                        title=title,
+                        legal_type=legal_type,
+                        score=float(score) if score is not None else 0.0,
+                        source="fts",
+                        article_hint=extract_article_hint(content),
+                    ))
+            except Exception as e:
+                print(f"[local][FTS-PG] Structured query failed: {e}", flush=True)
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                cur = conn.cursor()
+
+        # 2. Try fallback OR query
+        if not results:
+            GRAMMAR_STOPWORDS = {
+                "và", "hoặc", "nhưng", "vì", "nên", "của", "các", "những", "là", "có", 
+                "trong", "tại", "để", "theo", "được", "bị", "cho", "ra", "vào", "lên", 
+                "xuống", "do", "từ", "đến", "bằng", "with", "với", "về", "như", "thì", 
+                "mà", "khi", "gì", "này", "đó", "kia", "nọ", "thế", "vậy", "nào", "ai", 
+                "đâu", "cái", "con", "chiếc", "nếu", "sẽ", "phải", "sao", "thế"
+            }
+            words = [w.lower().strip() for w in query.split()]
+            terms = []
+            for w in words:
+                w = re.sub(r'[^\w\s\u00C0-\u024F\u1E00-\u1EFF]', '', w).strip()
+                if w and len(w) >= 3 and w not in GRAMMAR_STOPWORDS:
+                    terms.append(f"'{w}'")
+            
+            if terms:
+                fallback_expr = " | ".join(terms)
+                print(f"[local][FTS-PG] Fallback OR query: {fallback_expr}", flush=True)
+                try:
+                    cur.execute("""
+                        SELECT c.id, c.document_id, c.chunk_index, c.content, 
+                               ts_rank(to_tsvector('simple', c.content), to_tsquery('simple', %s)) AS score,
+                               d.document_number, d.title, d.legal_type
+                        FROM document_chunks c
+                        JOIN documents d ON c.document_id = d.id
+                        WHERE to_tsvector('simple', c.content) @@ to_tsquery('simple', %s)
+                        ORDER BY score DESC
+                        LIMIT %s;
+                    """, (fallback_expr, fallback_expr, k))
+                    rows = cur.fetchall()
+                    for row in rows:
+                        cid, doc_id, chunk_idx, content, score, doc_number, title, legal_type = row
+                        results.append(RetrievalResult(
+                            chunk_id=str(cid),
+                            document_id=doc_id,
+                            chunk_index=chunk_idx,
+                            content=content,
+                            doc_number=doc_number,
+                            title=title,
+                            legal_type=legal_type,
+                            score=float(score) if score is not None else 0.0,
+                            source="fts",
+                            article_hint=extract_article_hint(content),
+                        ))
+                except Exception as e:
+                    print(f"[local][FTS-PG] Fallback OR query failed: {e}", flush=True)
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
+                    cur = conn.cursor()
+
+        # 3. Try ILIKE fallback search
+        if not results:
+            print(f"[local][FTS-PG] FTS queries returned 0 results. Trying ILIKE fallback search...", flush=True)
+            keywords = [w for w in query.split() if len(w) >= 3][:5]
+            if keywords:
+                like_pattern = f"%{keywords[0]}%"
+                try:
+                    cur.execute("""
+                        SELECT c.id, c.document_id, c.chunk_index, c.content,
+                               d.document_number, d.title, d.legal_type
+                        FROM document_chunks c
+                        JOIN documents d ON c.document_id = d.id
+                        WHERE c.content ILIKE %s
+                        LIMIT %s;
+                    """, (like_pattern, k * 3))
+                    rows = cur.fetchall()
+                    for row in rows:
+                        cid, doc_id, chunk_idx, content, doc_number, title, legal_type = row
+                        score = float(sum(1 for kw in keywords if kw.lower() in content.lower()))
+                        results.append(RetrievalResult(
+                            chunk_id=str(cid),
+                            document_id=doc_id,
+                            chunk_index=chunk_idx,
+                            content=content,
+                            doc_number=doc_number,
+                            title=title,
+                            legal_type=legal_type,
+                            score=score,
+                            source="fts",
+                            article_hint=extract_article_hint(content),
+                        ))
+                    results.sort(key=lambda x: -x.score)
+                    results = results[:k]
+                except Exception as e:
+                    print(f"[local][FTS-PG] ILIKE fallback failed: {e}", flush=True)
+
+        cur.close()
+        return results
+
     def fts_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
         """
-        FTS search với SQLite FTS5 BM25 native.
+        FTS search với SQLite FTS5 BM25 native hoặc PostgreSQL.
         Sử dụng cấu trúc AND/OR thông minh dựa trên phân tích ngữ nghĩa để tránh gây nhiễu.
         Fallback sang LIKE search nếu FTS5 index chưa được tạo đúng.
         """
+        if self.use_postgres:
+            return self.fts_search_pg(query, top_k)
+
         k = top_k or self.top_k
         
         conn = self._get_conn()
@@ -473,44 +722,108 @@ class LegalRetriever:
         if not valid_indices:
             return []
             
-        # Truy vấn SQLite để lấy thông tin các chunks tương ứng với rowid
-        conn = self._get_conn()
-        cur = conn.cursor()
-        placeholders = ",".join("?" for _ in valid_indices)
-        cur.execute(f"""
-            SELECT rowid, id, document_id, chunk_index, content
-            FROM document_chunks
-            WHERE rowid IN ({placeholders});
-        """, valid_indices)
-        
-        rows = cur.fetchall()
-        row_map = {row["rowid"]: row for row in rows}
-        
-        results = []
-        for idx, score in zip(indices, scores):
-            idx = int(idx)
-            if idx not in row_map:
-                continue
-            row = row_map[idx]
-            cid = row["id"]
-            doc_id = row["document_id"]
-            chunk_idx = row["chunk_index"]
-            content = row["content"] or ""
+        if self.use_postgres:
+            # 1. Truy vấn SQLite để lấy (document_id, chunk_index) tương ứng với SQLite rowid
+            conn_sq = self._get_conn()
+            cur_sq = conn_sq.cursor()
+            placeholders_sq = ",".join("?" for _ in valid_indices)
+            cur_sq.execute(f"SELECT rowid, document_id, chunk_index FROM document_chunks WHERE rowid IN ({placeholders_sq});", valid_indices)
+            rowid_to_key = {row[0]: (row[1], row[2]) for row in cur_sq.fetchall()}
+            cur_sq.close()
             
-            meta = _parse_meta_from_content(content)
-            results.append(RetrievalResult(
-                chunk_id=str(cid),
-                document_id=doc_id,
-                chunk_index=chunk_idx,
-                content=content,
-                doc_number=meta["document_number"],
-                title=meta["title"],
-                legal_type=meta["legal_type"],
-                score=float(score),
-                source="vector",
-                article_hint=extract_article_hint(content),
-            ))
-        return results
+            keys = [rowid_to_key[idx] for idx in valid_indices if idx in rowid_to_key]
+            if not keys:
+                return []
+                
+            # 2. Truy vấn PostgreSQL bằng (document_id, chunk_index) để lấy thông tin chi tiết
+            conn_pg = self._get_pg_conn()
+            cur_pg = conn_pg.cursor()
+            placeholders_pg = ",".join("(%s, %s)" for _ in keys)
+            params = []
+            for doc_id, chunk_idx in keys:
+                params.extend([doc_id, chunk_idx])
+                
+            cur_pg.execute(f"""
+                SELECT c.id, c.document_id, c.chunk_index, c.content,
+                       d.document_number, d.title, d.legal_type
+                FROM document_chunks c
+                JOIN documents d ON c.document_id = d.id
+                WHERE (c.document_id, c.chunk_index) IN ({placeholders_pg});
+            """, params)
+            
+            rows = cur_pg.fetchall()
+            cur_pg.close()
+            key_to_row = {(row[1], row[2]): row for row in rows}
+            
+            results = []
+            for idx, score in zip(indices, scores):
+                idx = int(idx)
+                if idx not in rowid_to_key:
+                    continue
+                key = rowid_to_key[idx]
+                if key not in key_to_row:
+                    continue
+                row = key_to_row[key]
+                cid = row[0]
+                doc_id = row[1]
+                chunk_idx = row[2]
+                content = row[3] or ""
+                doc_number = row[4]
+                title = row[5]
+                legal_type = row[6]
+                
+                results.append(RetrievalResult(
+                    chunk_id=str(cid),
+                    document_id=doc_id,
+                    chunk_index=chunk_idx,
+                    content=content,
+                    doc_number=doc_number,
+                    title=title,
+                    legal_type=legal_type,
+                    score=float(score),
+                    source="vector",
+                    article_hint=extract_article_hint(content),
+                ))
+            return results
+        else:
+            # Truy vấn SQLite để lấy thông tin các chunks tương ứng với rowid
+            conn = self._get_conn()
+            cur = conn.cursor()
+            placeholders = ",".join("?" for _ in valid_indices)
+            cur.execute(f"""
+                SELECT rowid, id, document_id, chunk_index, content
+                FROM document_chunks
+                WHERE rowid IN ({placeholders});
+            """, valid_indices)
+            
+            rows = cur.fetchall()
+            row_map = {row["rowid"]: row for row in rows}
+            
+            results = []
+            for idx, score in zip(indices, scores):
+                idx = int(idx)
+                if idx not in row_map:
+                    continue
+                row = row_map[idx]
+                cid = row["id"]
+                doc_id = row["document_id"]
+                chunk_idx = row["chunk_index"]
+                content = row["content"] or ""
+                
+                meta = _parse_meta_from_content(content)
+                results.append(RetrievalResult(
+                    chunk_id=str(cid),
+                    document_id=doc_id,
+                    chunk_index=chunk_idx,
+                    content=content,
+                    doc_number=meta["document_number"],
+                    title=meta["title"],
+                    legal_type=meta["legal_type"],
+                    score=float(score),
+                    source="vector",
+                    article_hint=extract_article_hint(content),
+                ))
+            return results
 
     # ── Hybrid (RRF) ────────────────────────────────────────────────────────────
 
@@ -564,10 +877,14 @@ class LegalRetriever:
             device = "cuda" if torch.cuda.is_available() else "cpu"
             print(f"[local] Loading reranker model BAAI/bge-reranker-v2-m3 on device '{device}'...", flush=True)
             t0 = time.time()
-            self._reranker = CrossEncoder("./bge-reranker-v2-m3", device=device)
-            # Optimize memory if using CUDA
-            if device == "cuda" and hasattr(self._reranker.model, "half"):
-                self._reranker.model.half()
+            model_path = os.path.join(os.path.dirname(__file__), "bge-reranker-v2-m3")
+            automodel_args = {}
+            if device == "cuda":
+                automodel_args = {
+                    "torch_dtype": torch.float16,
+                    "low_cpu_mem_usage": True
+                }
+            self._reranker = CrossEncoder(model_path, device=device, automodel_args=automodel_args)
             print(f"[local] Reranker model loaded in {time.time()-t0:.1f}s", flush=True)
             
         pairs = []
@@ -706,19 +1023,40 @@ class LegalRetriever:
             return results
             
         doc_ids = list(target_articles.keys())
-        conn = self._get_conn()
-        cur = conn.cursor()
-        
-        placeholders = ",".join("?" for _ in doc_ids)
-        cur.execute(f"""
-            SELECT document_id, chunk_index, content
-            FROM document_chunks
-            WHERE document_id IN ({placeholders})
-            ORDER BY document_id, chunk_index
-        """, doc_ids)
-        
-        all_chunks = cur.fetchall()
-        
+        if self.use_postgres:
+            conn = self._get_pg_conn()
+            cur = conn.cursor()
+            placeholders = ",".join("%s" for _ in doc_ids)
+            cur.execute(f"""
+                SELECT document_id, chunk_index, content
+                FROM document_chunks
+                WHERE document_id IN ({placeholders})
+                ORDER BY document_id, chunk_index
+            """, doc_ids)
+            all_chunks = cur.fetchall()
+            cur.close()
+            
+            all_chunks_compat = []
+            for row in all_chunks:
+                all_chunks_compat.append({
+                    "document_id": row[0],
+                    "chunk_index": row[1],
+                    "content": row[2]
+                })
+            all_chunks = all_chunks_compat
+        else:
+            conn = self._get_conn()
+            cur = conn.cursor()
+            placeholders = ",".join("?" for _ in doc_ids)
+            cur.execute(f"""
+                SELECT document_id, chunk_index, content
+                FROM document_chunks
+                WHERE document_id IN ({placeholders})
+                ORDER BY document_id, chunk_index
+            """, doc_ids)
+            all_chunks = cur.fetchall()
+            cur.close()
+            
         doc_chunks = {}
         for row in all_chunks:
             did = row["document_id"]
@@ -732,8 +1070,7 @@ class LegalRetriever:
             current_article = None
             for row in rows:
                 content = row["content"] or ""
-                # Import extract_article_hint dynamically or rely on global
-                from retriever import extract_article_hint
+                # Rely on global extract_article_hint
                 hint = extract_article_hint(content)
                 if hint:
                     current_article = hint

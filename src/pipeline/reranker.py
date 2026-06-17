@@ -19,7 +19,6 @@ class PipelineReranker:
         self.model_name = model_name
         self.top_n = top_n
         self._reranker = None
-
     def _lazy_load(self):
         if self._reranker is None:
             import torch
@@ -27,7 +26,13 @@ class PipelineReranker:
             device = "cuda" if torch.cuda.is_available() else "cpu"
             print(f"[pipeline] Loading reranker model {self.model_name} on '{device}'...", flush=True)
             t0 = time.time()
-            self._reranker = CrossEncoder(self.model_name, device=device)
+            automodel_args = {}
+            if device == "cuda":
+                automodel_args = {
+                    "torch_dtype": torch.float16,
+                    "low_cpu_mem_usage": True
+                }
+            self._reranker = CrossEncoder(self.model_name, device=device, automodel_args=automodel_args)
             print(f"[pipeline] Reranker loaded in {time.time()-t0:.1f}s", flush=True)
 
     def rerank_and_filter(self, query: str, results: List[RetrievalResult]) -> List[RetrievalResult]:

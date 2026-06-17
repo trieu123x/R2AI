@@ -7,7 +7,6 @@ with open('retriever.py', 'r', encoding='utf-8') as f:
 content = content.replace('vector_weight: float = 0.5,', 'vector_weight: float = 0.3,')
 content = content.replace('fts_weight: float = 0.5,', 'fts_weight: float = 0.7,')
 
-# 2. Rewrite rerank method to use BAAI/bge-reranker-v2-m3 and metadata boosting
 rerank_new = '''    def rerank(self, query: str, results: List[RetrievalResult], top_k: Optional[int] = None) -> List[RetrievalResult]:
         if not results:
             return []
@@ -18,10 +17,14 @@ rerank_new = '''    def rerank(self, query: str, results: List[RetrievalResult],
             device = "cuda" if torch.cuda.is_available() else "cpu"
             print(f"[local] Loading reranker model BAAI/bge-reranker-v2-m3 on device '{device}'...", flush=True)
             t0 = time.time()
-            self._reranker = CrossEncoder("BAAI/bge-reranker-v2-m3", device=device)
-            # Optimize memory if using CUDA
-            if device == "cuda" and hasattr(self._reranker.model, "half"):
-                self._reranker.model.half()
+            model_path = os.path.join(os.path.dirname(__file__), "bge-reranker-v2-m3")
+            automodel_args = {}
+            if device == "cuda":
+                automodel_args = {
+                    "torch_dtype": torch.float16,
+                    "low_cpu_mem_usage": True
+                }
+            self._reranker = CrossEncoder(model_path, device=device, automodel_args=automodel_args)
             print(f"[local] Reranker model loaded in {time.time()-t0:.1f}s", flush=True)
             
         pairs = []

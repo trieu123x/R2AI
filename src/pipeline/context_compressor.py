@@ -31,11 +31,12 @@ class ContextCompressor:
         if not article_hint:
             return content.strip()
 
-        match_num = re.search(r'\d+', article_hint)
+        # Hỗ trợ tìm kiếm cả số và chữ cái hậu tố (Ví dụ: 15, 15a, 15b)
+        match_num = re.search(r'(\d+[a-zA-Z]?)', article_hint)
         if not match_num:
             return content.strip()
 
-        art_num = match_num.group()
+        art_num = match_num.group(1)
         
         pattern = re.compile(rf'^\s*Điều\s+{art_num}\b', re.MULTILINE | re.IGNORECASE)
         match = pattern.search(content)
