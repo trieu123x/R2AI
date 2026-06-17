@@ -41,6 +41,7 @@ class RetrievalResult:
     score: float
     source: str
     article_hint: Optional[str] = None
+    best_chunk_content: Optional[str] = None
 
     def format_relevant_doc(self) -> str:
         return f"{self.doc_number}|{self.legal_type} {self.doc_number} {self.title}"
@@ -126,8 +127,8 @@ class LegalRetriever:
         self,
         db_path: str = LOCAL_DB_PATH,
         top_k: int = 10,
-        vector_weight: float = 0.5,
-        fts_weight: float = 0.5,
+        vector_weight: float = 0.3,
+        fts_weight: float = 0.7,
         rrf_k: int = 60,
     ):
         self.db_path = db_path
@@ -561,39 +562,23 @@ class LegalRetriever:
             import torch
             from sentence_transformers import CrossEncoder
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            print(f"[local] Loading reranker model itdainb/PhoRanker on device '{device}'...", flush=True)
+            print(f"[local] Loading reranker model BAAI/bge-reranker-v2-m3 on device '{device}'...", flush=True)
             t0 = time.time()
-            self._reranker = CrossEncoder("itdainb/PhoRanker", device=device)
+            self._reranker = CrossEncoder("./bge-reranker-v2-m3", device=device)
             # Optimize memory if using CUDA
             if device == "cuda" and hasattr(self._reranker.model, "half"):
                 self._reranker.model.half()
             print(f"[local] Reranker model loaded in {time.time()-t0:.1f}s", flush=True)
             
-        # Segment query using underthesea if available (PhoRanker needs it)
-        segmented_query = query
-        try:
-            import underthesea
-            segmented_query = underthesea.word_tokenize(query, format="text")
-        except Exception as e:
-            pass
-            
-        # Segment document content
-        conn = self._get_conn()
-        cur = conn.cursor()
-        chunk_ids = [r.chunk_id for r in results]
-        placeholders = ",".join("?" for _ in chunk_ids)
-        cur.execute(f"""
-            SELECT id, segmented_content
-            FROM document_chunks
-            WHERE id IN ({placeholders})
-        """, chunk_ids)
-        seg_rows = cur.fetchall()
-        seg_map = {row["id"]: row["segmented_content"] for row in seg_rows}
-        
         pairs = []
         for r in results:
-            doc_text = seg_map.get(r.chunk_id) or r.content
-            pairs.append([segmented_query, doc_text])
+            best_text = getattr(r, 'best_chunk_content', None) or r.content
+            
+            # Thêm metadata boosting để tăng độ chính xác (rất hiệu quả với văn bản pháp luật)
+            article_str = f"Điều: {r.article_hint}\n" if r.article_hint else ""
+            doc_text = f"Văn bản: {r.legal_type} {r.doc_number} - {r.title}\n{article_str}Nội dung:\n{best_text}"
+            
+            pairs.append([query, doc_text])
             
         t_rerank = time.time()
         scores = self._reranker.predict(pairs, show_progress_bar=False)
@@ -784,6 +769,9 @@ class LegalRetriever:
             seen_keys.add(key)
             
             if key in expanded_articles:
+                # Lưu lại nội dung của best chunk (chunk ban đầu có điểm cao nhất) để dùng cho Rerank
+                r.best_chunk_content = r.content
+                
                 full_content = "\n...\n".join(expanded_articles[key])
                 r.content = full_content
                 r.source += "_parent_expanded"
@@ -840,15 +828,24 @@ class LegalRetriever:
             article_results.sort(key=lambda x: x.score, reverse=True)
             results = article_results
 
-        # 4. Áp dụng Absolute & Relative Score Thresholds
+        # 4. Áp dụng Absolute & Relative Score Thresholds (Dynamic Thresholding)
         if results:
             RERANK_THRESHOLD = 0.15
             best_score = results[0].score
             
+            relative_threshold_ratio = 0.5
+            
+            # Dynamic gap filtering: Nếu top 1 vượt trội hoàn toàn top 2
+            if len(results) > 1:
+                score_1 = results[0].score
+                score_2 = results[1].score
+                if (score_1 - score_2) > 0.2:
+                    relative_threshold_ratio = 0.8
+            
             filtered_by_score = []
             for r in results:
-                # Giữ chunk nếu score >= 0.15 VÀ score >= 50% của best_score (Siết chặt để chống nhiễu)
-                if r.score >= RERANK_THRESHOLD and r.score >= best_score * 0.5:
+                # Giữ chunk nếu thỏa mãn ngưỡng tuyệt đối và ngưỡng tương đối động
+                if r.score >= RERANK_THRESHOLD and r.score >= best_score * relative_threshold_ratio:
                     filtered_by_score.append(r)
             results = filtered_by_score
 
