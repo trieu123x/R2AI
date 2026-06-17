@@ -1,39 +1,52 @@
 STDOUT and STDERR:
-[batch] 3 questions from test_questions.json
+[batch] 5 questions from test_questions.json
 [batch] Mode: hybrid | Top-K: 5 | Rerank: True | LLM: True
 ------------------------------------------------------------
 [batch] Backend: LOCAL (SQLite)
 [batch] === GIAI ĐOẠN 1: TRUY XUẤT TÀI LIỆU (RETRIEVAL) ===
 [local][FTS5] Structured query: ("ươm tạo" OR "cơ sở ươm tạo" OR "khu làm việc chung" OR "làm việc chung") AND ("thuế" OR "đất đai" OR "mặt bằng" OR "thuê đất" OR "ưu đãi thuế" OR "tiền sử dụng đất" OR "giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
 [local] Loading bkai-bi-encoder on device 'cuda'...
-[local] Model loaded in 4.7s
+[local] Model loaded in 4.8s
 [local] Loading FAISS index from C:\Users\admin\Downloads\R2AI\database\local_chunks.index...
-[local] FAISS index loaded in 1.46s
+[local] FAISS index loaded in 1.51s
 [local] Loading reranker model BAAI/bge-reranker-v2-m3 on device 'cuda'...
-[local] Reranker model loaded in 4.0s
-[local] Reranking took 1.36s for 29 pairs.
-[local] mode=hybrid | rerank=True | 5 results | 32.88s
-  [  1/3] id=1 | Reranked/Retrieved | 32.88s
+[local] Reranker model loaded in 3.2s
+[local] Reranking took 1.30s for 29 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 29.24s
+  [  1/5] id=1 | Reranked/Retrieved | 29.24s
 [local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ") AND ("đấu thầu" OR "nhà thầu" OR "lựa chọn nhà thầu" OR "gói thầu" OR "xếp hạng hồ sơ")
-[local] Reranking took 0.57s for 41 pairs.
-[local] mode=hybrid | rerank=True | 5 results | 1.22s
-  [  2/3] id=2 | Reranked/Retrieved | 1.22s
+[local] Reranking took 0.56s for 41 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 1.25s
+  [  2/5] id=2 | Reranked/Retrieved | 1.25s
 [local][FTS5] Structured query: ("người lao động" OR "lao động" OR "nhân viên" OR "hợp đồng lao động") AND ("giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
-[local] Reranking took 0.47s for 31 pairs.
-[local] mode=hybrid | rerank=True | 1 results | 1.87s
-  [  3/3] id=3 | Reranked/Retrieved | 1.87s
+[local] Reranking took 0.46s for 31 pairs.
+[local] mode=hybrid | rerank=True | 1 results | 1.82s
+  [  3/5] id=3 | Reranked/Retrieved | 1.82s
+[local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ")
+[local] Reranking took 0.43s for 36 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 0.94s
+  [  4/5] id=4 | Reranked/Retrieved | 0.94s
+[local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ") AND ("thuế" OR "đất đai" OR "mặt bằng" OR "thuê đất" OR "ưu đãi thuế" OR "tiền sử dụng đất" OR "giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
+[local] Reranking took 0.54s for 36 pairs.
+[local] mode=hybrid | rerank=True | 3 results | 1.22s
+  [  5/5] id=5 | Reranked/Retrieved | 1.22s
 
 [batch] Giải phóng retriever và giải phóng GPU memory...
 
 [batch] === GIAI ĐOẠN 2: KHỞI TẠO LLM VÀ SINH CÂU TRẢ LỜI (GENERATION) ===
 [generator] Đang load model 'Qwen/Qwen2.5-0.5B-Instruct' (Offline=True)...
 [generator] Thiết lập mô hình chạy trên dtype=torch.bfloat16...
-[generator] Model loaded in 2.1s
-  [  1/3] id=1 | 5 docs, 5 articles | LLM Answer: Yes | 111.42s
-  [  2/3] id=2 | 4 docs, 5 articles | LLM Answer: Yes | 56.86s
-  [  3/3] id=3 | 1 docs, 1 articles | LLM Answer: Yes | 19.66s
+[generator] Model loaded in 2.2s
+  [  1/5] id=1 | 5 docs, 5 articles | LLM Answer: Yes | 86.38s
+  [  2/5] id=2 | 4 docs, 5 articles | LLM Answer: Yes | 32.37s
+  [  3/5] id=3 | 1 docs, 1 articles | LLM Answer: Yes | 29.01s
+  [  4/5] id=4 ⚠ Phát hiện lỗi sinh (dẫn chiếu sai các Điều không có trong context: {'20'}) lần 1. Đang sinh lại...
+  [  4/5] id=4 ⚠ Phát hiện lỗi sinh (dẫn chiếu sai các Điều không có trong context: {'20'}) lần 2. Đang sinh lại...
+  [  4/5] id=4 ⚠ Đã thử 2 lần vẫn lỗi. Fallback sang Rule-based.
+  [  4/5] id=4 | 4 docs, 5 articles | LLM Answer: Yes | 63.48s
+  [  5/5] id=5 | 3 docs, 3 articles | LLM Answer: Yes | 19.95s
 ------------------------------------------------------------
-[batch] ✓ Xong! 3 câu | avg 62.65s/câu
+[batch] ✓ Xong! 5 câu | avg 46.24s/câu
 [batch] ✓ Đã ghi → test_results.json
 
 Để nén và nộp bài:

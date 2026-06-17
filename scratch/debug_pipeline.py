@@ -1,136 +1,85 @@
-"""
-qwen_generator.py
-=================
-Bộ sinh câu trả lời tự động bằng LLM local (mặc định Qwen/Qwen3-8B-Instruct).
-Hỗ trợ:
-  - Tự động detect và offload sang GPU bằng device_map="auto"
-  - Sử dụng chat template chuẩn của dòng Qwen
-  - Tối ưu hóa memory bằng torch.bfloat16 hoặc torch.float16
-"""
-
 import os
 import sys
-import re
+import json
 import time
-from typing import List, Optional
+import torch
+import io
+
+# Force UTF-8 on Windows
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from retrieval.retriever import RetrievalResult
+from retrieval.retriever import LegalRetriever
+from retrieval.qwen_generator import QwenGenerator
 
-def extract_evidence(content: str, article_hint: Optional[str]) -> str:
-    """Trích xuất duy nhất phần Điều luật liên quan từ chunk nội dung để tránh nhiễu."""
-    header = ""
-    lines = content.split('\n')
-    for line in lines[:3]:
-        if "Văn bản:" in line:
-            header = line.strip() + "\n"
-            break
-
-    if not article_hint:
-        return content.strip()
-
-    # Hỗ trợ tìm kiếm cả số và chữ cái hậu tố (Ví dụ: 15, 15a, 15b)
-    match_num = re.search(r'(\d+[a-zA-Z]?)', article_hint)
-    if not match_num:
-        return content.strip()
-
-    art_num = match_num.group(1)
+def main():
+    print("1. Loading Retriever...")
+    retriever = LegalRetriever(use_postgres=False, top_k=5)
     
-    pattern = re.compile(rf'^\s*Điều\s+{art_num}\b', re.MULTILINE | re.IGNORECASE)
-    match = pattern.search(content)
-    if not match:
-        pattern_fallback = re.compile(rf'Điều\s+{art_num}\b', re.IGNORECASE)
-        match = pattern_fallback.search(content)
-
-    if not match:
-        return content.strip()
-
-    start_idx = match.start()
+    print("2. Loading Questions...")
+    with open("test_questions.json", "r", encoding="utf-8") as f:
+        questions = json.load(f)
+        
+    print(f"Loaded {len(questions)} questions.")
     
-    next_pattern = re.compile(r'^\s*Điều\s+\d+\b', re.MULTILINE | re.IGNORECASE)
-    matches_after = list(next_pattern.finditer(content[start_idx + len(match.group()):]))
-    
-    if matches_after:
-        end_idx = start_idx + len(match.group()) + matches_after[0].start()
-        extracted_text = content[start_idx:end_idx].strip()
-    else:
-        extracted_text = content[start_idx:].strip()
-
-    return (header + extracted_text).strip()
-
-class QwenGenerator:
-    """
-    Trình phát sinh câu trả lời pháp lý local sử dụng mô hình Qwen3-8B.
-    """
-    def __init__(self, model_name: str = "Qwen/Qwen3-8B-Instruct"):
-        self.model_name = model_name
-        self._tokenizer = None
-        self._model = None
-
-    def _lazy_load(self):
-        """Lazy load tokenizer và model để tối ưu hóa bộ nhớ khi không dùng tới."""
-        if self._model is not None:
-            return
-
-        import torch
-        from transformers import AutoTokenizer, AutoModelForCausalLM
-
-        is_offline = os.environ.get("HF_HUB_OFFLINE") == "1"
-
-        print(f"[generator] Đang load model '{self.model_name}' (Offline={is_offline})...", flush=True)
+    # Run retrieval
+    retrieved_data = []
+    for idx, q in enumerate(questions, start=1):
+        qid = q["id"]
+        question = q["question"]
+        print(f"Retrieving for Q{qid}: {question}")
         t0 = time.time()
-
-        try:
-            self._tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name,
-                trust_remote_code=True,
-                local_files_only=is_offline,
-                use_fast=False
-            )
-
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
-
-            print(f"[generator] Thiết lập mô hình chạy trên dtype={dtype}...", flush=True)
-
-            self._model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                torch_dtype=dtype,
-                device_map="auto",
-                trust_remote_code=True,
-                local_files_only=is_offline,
-                attn_implementation="sdpa"
-            )
-            print(f"[generator] Model loaded in {time.time() - t0:.1f}s", flush=True)
-        except Exception as e:
-            print(f"[generator] Failed to load model: {e}")
-            raise
-
-    def generate_answer(self, query: str, results: List[RetrievalResult], max_new_tokens: int = 1024, warning_msg: Optional[str] = None) -> str:
-        """
-        Sinh câu trả lời dựa trên câu hỏi và các tài liệu luật pháp đã truy xuất.
-        """
+        results = retriever.retrieve(question, mode="hybrid", top_k=5, rerank=True)
+        print(f"Retrieved {len(results)} results in {time.time()-t0:.2f}s")
+        retrieved_data.append((qid, question, results))
+        
+    print("\n3. Cleaning up retriever...")
+    if hasattr(retriever, '_model'):
+        del retriever._model
+    if hasattr(retriever, '_reranker'):
+        del retriever._reranker
+    retriever.close()
+    del retriever
+    
+    import gc
+    gc.collect()
+    torch.cuda.empty_cache()
+    print("Retriever cleaned. GPU Memory:", torch.cuda.memory_allocated() / 1024**2, "MB")
+    
+    print("\n4. Loading Generator...")
+    generator = QwenGenerator(model_name="Qwen/Qwen2.5-0.5B-Instruct")
+    generator._lazy_load()
+    print("Generator loaded. GPU Memory:", torch.cuda.memory_allocated() / 1024**2, "MB")
+    
+    # Run generation
+    for idx, (qid, question, results) in enumerate(retrieved_data, start=1):
+        print(f"\n--- Generating for Q{qid}: {question} ---")
         if not results:
-            return "Không tìm thấy tài liệu luật pháp liên quan để làm căn cứ trả lời."
-
-        self._lazy_load()
-
-        # Xây dựng Structured Context từ các tài liệu đã trích xuất bằng chứng
+            print("No results.")
+            continue
+            
+        # We will manually prepare the prompt to print its details
+        t0 = time.time()
+        print("Preparing prompt...")
+        
+        # Prepare context parts using extract_evidence
+        from retrieval.qwen_generator import extract_evidence
         context_parts = []
-        for idx, r in enumerate(results, start=1):
+        for c_idx, r in enumerate(results[:3], start=1):
             extracted_body = extract_evidence(r.content, r.article_hint)
-            # Tách bỏ header line "Văn bản: ..." nếu có
             lines = extracted_body.split('\n')
             body_lines = []
             for line in lines:
                 if not line.strip().startswith("Văn bản:"):
                     body_lines.append(line)
             clean_body = "\n".join(body_lines).strip()
-            
             part = (
-                f"[Căn cứ {idx}]\n"
+                f"[Căn cứ {c_idx}]\n"
                 f"Độ liên quan: {r.score:.4f}\n"
                 f"Văn bản: {r.legal_type} số {r.doc_number} {r.title}\n"
                 f"Điều: {r.article_hint or 'Toàn bộ'}\n"
@@ -139,8 +88,7 @@ class QwenGenerator:
             context_parts.append(part)
         
         context = "\n\n=========================================\n\n".join(context_parts)
-
-        # Hệ thống Prompt hướng dẫn cực kỳ rõ ràng cho Qwen
+        
         system_prompt = (
             "Bạn là một trợ lý pháp lý Việt Nam chuyên nghiệp, chính xác và đáng tin cậy.\n\n"
             "Nhiệm vụ của bạn:\n"
@@ -162,14 +110,12 @@ class QwenGenerator:
             f"=========================================\n"
             f"{context}\n"
             f"=========================================\n\n"
-            f"{f'LƯU Ý QUAN TRỌNG TỪ HỆ THỐNG: {warning_msg}\n\n' if warning_msg else ''}"
-            f"CÂU HỎI: {query}\n\n"
+            f"CÂU HỎI: {question}\n\n"
             f"Yêu cầu trả lời: Hãy phân tích kỹ tài liệu tham khảo trên và trả lời câu hỏi tuân thủ đúng cấu trúc 4 phần nêu trên.\n"
         )
 
         messages = [
             {"role": "system", "content": system_prompt},
-            # Few-shot example
             {"role": "user", "content": (
                 "TÀI LIỆU THAM KHẢO CUNG CẤP:\n"
                 "=========================================\n"
@@ -196,25 +142,32 @@ class QwenGenerator:
             {"role": "user", "content": user_content}
         ]
 
-        prompt = self._tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True
-        )
-
-        inputs = self._tokenizer([prompt], return_tensors="pt").to(self._model.device)
-
-        outputs = self._model.generate(
+        prompt_str = generator._tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        inputs = generator._tokenizer([prompt_str], return_tensors="pt").to(generator._model.device)
+        
+        input_len = inputs.input_ids.shape[1]
+        print(f"Input Prompt Length (Tokens): {input_len}")
+        
+        print("Calling model.generate()...")
+        t_gen = time.time()
+        
+        # We generate using no_repeat_ngram_size=5 as configured in generator
+        outputs = generator._model.generate(
             **inputs,
-            max_new_tokens=max_new_tokens,
+            max_new_tokens=512,
             do_sample=False,
             repetition_penalty=1.1,
-            pad_token_id=self._tokenizer.eos_token_id
+            no_repeat_ngram_size=5,
+            pad_token_id=generator._tokenizer.eos_token_id
         )
-
-        generated_ids = [
-            output_ids[len(input_ids):] for input_ids, output_ids in zip(inputs.input_ids, outputs)
-        ]
         
-        response = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-        return response.strip()
+        print(f"model.generate() completed in {time.time()-t_gen:.2f}s")
+        generated_ids = [output_ids[len(input_ids):] for input_ids, output_ids in zip(inputs.input_ids, outputs)]
+        response = generator._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        print("Generated Response:")
+        print(response)
+        print("-" * 50)
+
+if __name__ == "__main__":
+    main()
+

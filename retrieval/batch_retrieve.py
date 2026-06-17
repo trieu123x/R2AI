@@ -299,8 +299,8 @@ def main():
                 warning_msg = None
                 answer = ""
                 for attempt in range(max_retries):
-                    answer = generator.generate_answer(question, results[:5], warning_msg=warning_msg)
-                    is_valid, err_msg = validate_citations_detailed(answer, results[:5])
+                    answer = generator.generate_answer(question, results[:3], max_new_tokens=512, warning_msg=warning_msg)
+                    is_valid, err_msg = validate_citations_detailed(answer, results[:3])
                     if is_valid:
                         break
                     else:

@@ -11,13 +11,13 @@ if sys.platform == "win32":
 with open("R2AIStage1DATA.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 
-test_data = data[:3]
+test_data = data[:5]
 with open("test_questions.json", "w", encoding="utf-8") as f:
     json.dump(test_data, f, ensure_ascii=False, indent=2)
 
 print("Created test_questions.json. Running batch_retrieve.py...")
 cmd = [
-    sys.executable, "retrieval/batch_retrieve.py",
+    sys.executable, "-u", "retrieval/batch_retrieve.py",
     "--input", "test_questions.json",
     "--output", "test_results.json",
     "--mode", "hybrid",
@@ -43,6 +43,10 @@ with open("test_run_output.log", "w", encoding="utf-8") as out_f:
         out_f.write(line)
         
     process.wait()
+    
+    if process.returncode != 0:
+        print(f"\n[ERROR] batch_retrieve.py failed with exit code: {process.returncode}")
+        sys.exit(process.returncode)
 
 print("\nSaved output to test_run_output.log")
 
