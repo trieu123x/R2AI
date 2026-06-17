@@ -206,13 +206,21 @@ def run_interactive(args):
             )
             backend = "LOCAL (SQLite - fallback)"
 
+    # Khởi tạo Generator nếu chọn sinh câu trả lời
+    generator = None
+    if getattr(args, "llm", False):
+        from retrieval.qwen_generator import QwenGenerator
+        generator = QwenGenerator(model_name=getattr(args, "llm_model", "Qwen/Qwen3-8B-Instruct"))
+
     print_header()
     print(colorize(f"  Backend: {backend}", C.GREEN))
-    print(colorize(f"  Mode: {args.mode.upper()}  |  Top-K: {args.top_k}", C.CYAN))
+    print(colorize(f"  Mode: {args.mode.upper()}  |  Top-K: {args.top_k}  |  Rerank: {str(getattr(args, 'rerank', False)).upper()}  |  LLM: {str(getattr(args, 'llm', False)).upper()}", C.CYAN))
+    if getattr(args, 'llm', False):
+        print(colorize(f"  LLM Model: {args.llm_model}", C.YELLOW))
     print(colorize(f"  Vector weight: {args.vector_weight}  |  FTS weight: {args.fts_weight}  |  RRF-k: {args.rrf_k}", C.GRAY))
     print()
     print(colorize("  Nhap cau hoi phap ly. Go 'quit' de thoat.", C.WHITE))
-    print(colorize("  Lenh: ':mode fts|vector|hybrid', ':gpt expand|hyde|none', ':top 5', ':bench'", C.GRAY))
+    print(colorize("  Lenh: ':mode fts|vector|hybrid', ':gpt expand|hyde|none', ':rerank on|off', ':llm on|off', ':top 5', ':bench'", C.GRAY))
     print(hr())
 
 
@@ -242,14 +250,6 @@ def run_interactive(args):
                 break
 
             # Lệnh đặc biệt
-            if raw.startswith(":gpt "):
-                new_gpt = raw.split()[-1].lower()
-                if new_gpt in ("expand", "hyde", "none"):
-                    args.gpt_mode = None if new_gpt == "none" else new_gpt
-                    print(colorize(f"  [OK] Da doi gpt_mode -> {new_gpt.upper()}", C.GREEN))
-                else:
-                    print(colorize("  [ERR] GPT mode khong hop le (expand|hyde|none)", C.RED))
-                continue
 
             if raw.startswith(":mode "):
                 new_mode = raw.split()[-1].lower()
@@ -266,6 +266,27 @@ def run_interactive(args):
                     print(colorize(f"  [OK] Da doi top_k -> {top_k}", C.GREEN))
                 except ValueError:
                     print(colorize("  [ERR] Gia tri khong hop le", C.RED))
+                continue
+
+            if raw.startswith(":rerank "):
+                new_rerank = raw.split()[-1].lower()
+                if new_rerank in ("on", "off", "true", "false"):
+                    args.rerank = new_rerank in ("on", "true")
+                    print(colorize(f"  [OK] Da doi rerank -> {str(args.rerank).upper()}", C.GREEN))
+                else:
+                    print(colorize("  [ERR] Rerank mode khong hop le (on|off)", C.RED))
+                continue
+
+            if raw.startswith(":llm "):
+                new_llm = raw.split()[-1].lower()
+                if new_llm in ("on", "off", "true", "false"):
+                    args.llm = new_llm in ("on", "true")
+                    if args.llm and generator is None:
+                        from retrieval.qwen_generator import QwenGenerator
+                        generator = QwenGenerator(model_name=getattr(args, "llm_model", "Qwen/Qwen3-8B-Instruct"))
+                    print(colorize(f"  [OK] Da doi llm -> {str(args.llm).upper()}", C.GREEN))
+                else:
+                    print(colorize("  [ERR] LLM mode khong hop le (on|off)", C.RED))
                 continue
 
             query = _sanitize_query(raw)
@@ -290,11 +311,11 @@ def run_interactive(args):
 
         # ── Tìm kiếm ──
         print(f"\n{hr()}")
-        print(colorize(f"  [TIM KIEM] \"{query}\"  [mode={mode}, top_k={top_k}]", C.CYAN))
+        print(colorize(f"  [TIM KIEM] \"{query}\"  [mode={mode}, top_k={top_k}, rerank={getattr(args, 'rerank', False)}]", C.CYAN))
         print(hr())
 
         try:
-            results = retriever.retrieve(query, mode=mode, top_k=top_k, gpt_mode=getattr(args, "gpt_mode", None))
+            results = retriever.retrieve(query, mode=mode, top_k=top_k, rerank=getattr(args, "rerank", False))
         except Exception as e:
             print(colorize(f"  ✗ LỖI: {e}", C.RED))
             if not interactive:
@@ -317,6 +338,19 @@ def run_interactive(args):
         # ── Định dạng nộp bài ──
         print_submission_format(results)
 
+        # ── Sinh câu trả lời bằng LLM ──
+        answer = ""
+        if generator is not None:
+            print(f"\n{hr()}")
+            print(colorize("  [LLM] Đang sinh câu trả lời bằng local Qwen...", C.CYAN))
+            print(hr())
+            t0 = time.time()
+            answer = generator.generate_answer(query, results[:5])
+            print(colorize(f"  Thời gian sinh: {time.time() - t0:.2f}s", C.GRAY))
+            print(colorize("\n  [CÂU TRẢ LỜI]:", C.BOLD + C.YELLOW))
+            print(colorize(answer, C.WHITE))
+            print(f"{hr()}")
+
         # ── Export JSON (nếu cần) ──
         if args.export or (interactive and input(
             colorize("\n  Export JSON? (y/N): ", C.GRAY)
@@ -326,6 +360,7 @@ def run_interactive(args):
                 "query": query,
                 "mode": mode,
                 "top_k": top_k,
+                "answer": answer,
                 "results": [
                     {
                         "chunk_id": r.chunk_id,
@@ -387,8 +422,13 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Chay benchmark so sanh ca 3 mode")
     p.add_argument("--export", type=str, default=None,
                    help="Export ket qua ra file JSON")
-    p.add_argument("--gpt-mode", choices=["expand", "hyde"], default=None,
-                   help="Chế độ cải thiện truy vấn bằng GPT (expand: Mở rộng truy vấn, hyde: Hypothetical Document Embedding)")
+
+    p.add_argument("--rerank", "-r", action="store_true",
+                   help="Sử dụng reranker model PhoRanker để tối ưu thứ tự kết quả")
+    p.add_argument("--llm", action="store_true",
+                   help="Kích hoạt mô hình sinh câu trả lời bằng LLM local")
+    p.add_argument("--llm-model", default="Qwen/Qwen2.5-0.5B-Instruct",
+                   help="Tên mô hình LLM trên HuggingFace (mặc định: Qwen/Qwen2.5-0.5B-Instruct)")
     p.add_argument("--local", "-l", action="store_true",
                    help="Dung local SQLite thay vi Supabase (offline mode)")
     return p

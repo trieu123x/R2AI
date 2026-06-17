@@ -2,14 +2,13 @@
 batch_retrieve.py
 =================
 Chạy retrieval trên tập câu hỏi và xuất results.json đúng định dạng nộp bài.
+Tích hợp local LLM (Qwen3-8B) để sinh câu trả lời cho trường 'answer'.
 
 Input:  file JSON danh sách câu hỏi (format ban tổ chức cung cấp)
-Output: results.json (file nộp bài thi)
+Output: results.json (file nộp bài thi bao gồm tài liệu và câu trả lời)
 
 Cách dùng:
-  python retrieval/batch_retrieve.py --input questions.json
-  python retrieval/batch_retrieve.py --input questions.json --mode hybrid --top-k 10
-  python retrieval/batch_retrieve.py --input questions.json --output my_results.json
+  python retrieval/batch_retrieve.py --input questions.json --local --rerank --llm
 """
 
 import os
@@ -24,13 +23,119 @@ if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
+import warnings
+warnings.filterwarnings("ignore")
+
+try:
+    from transformers import logging
+    logging.set_verbosity_error()
+except ImportError:
+    pass
+
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 from retrieval.retriever import LegalRetriever
 
 
-def build_submission_entry(qid: int, question: str, results: list) -> dict:
+import re
+
+def has_repetitive_loop(text: str) -> bool:
+    """Kiểm tra xem câu trả lời có bị lặp từ/cụm từ vô hạn (loop) hay không."""
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
+    for i in range(len(lines) - 2):
+        if lines[i] == lines[i+1] == lines[i+2]:
+            print(f"[validator] Phát hiện lặp dòng liên tiếp: '{lines[i]}'")
+            return True
+            
+    for line in lines:
+        words = line.split()
+        if len(words) > 15:
+            # Check sliding window of size 2 to 8
+            for size in range(2, 9):
+                for start in range(len(words) - 3 * size):
+                    w1 = words[start : start + size]
+                    w2 = words[start + size : start + 2 * size]
+                    w3 = words[start + 2 * size : start + 3 * size]
+                    if w1 == w2 == w3:
+                        print(f"[validator] Phát hiện lặp cụm từ vô hạn: {' '.join(w1)}")
+                        return True
+    return False
+
+def validate_citations_detailed(answer: str, results: list):
+    """Kiểm tra chi tiết trích dẫn của câu trả lời so với context."""
+    if has_repetitive_loop(answer):
+        return False, "câu trả lời bị lặp từ/cụm từ vô hạn (loop)"
+
+    # Check Articles
+    answer_articles = set(re.findall(r"Điều\s+(\d+)", answer, re.IGNORECASE))
+    if answer_articles:
+        context_articles = set()
+        for r in results:
+            if r.article_hint:
+                matches = re.findall(r"Điều\s+(\d+)", r.article_hint, re.IGNORECASE)
+                context_articles.update(matches)
+            matches_content = re.findall(r"Điều\s+(\d+)", r.content, re.IGNORECASE)
+            context_articles.update(matches_content)
+            
+        invalid_articles = answer_articles - context_articles
+        if invalid_articles:
+            return False, f"dẫn chiếu sai các Điều không có trong context: {invalid_articles}"
+            
+    # Check Documents
+    answer_docs = set(re.findall(r"(\d+/\d+)", answer))
+    if answer_docs:
+        context_docs = set()
+        for r in results:
+            if r.doc_number:
+                matches = re.findall(r"(\d+/\d+)", r.doc_number)
+                context_docs.update(matches)
+            matches_content = re.findall(r"(\d+/\d+)", r.content)
+            context_docs.update(matches_content)
+            
+        invalid_docs = answer_docs - context_docs
+        if invalid_docs:
+            return False, f"dẫn chiếu sai các số hiệu Văn bản không có trong context: {invalid_docs}"
+            
+    return True, ""
+
+def generate_rule_based_answer(results: list) -> str:
+    """Tạo câu trả lời rule-based có cấu trúc rõ ràng dựa trên các tài liệu pháp lý đã tìm thấy."""
+    if not results:
+        return "Không tìm thấy căn cứ pháp lý liên quan để trả lời câu hỏi này."
+    
+    answer_parts = []
+    answer_parts.append("1. Trả lời trực tiếp: Căn cứ vào các văn bản pháp luật hiện hành được tìm thấy, dưới đây là thông tin trích xuất liên quan đến câu hỏi:")
+    
+    analysis = []
+    cơ_sở = []
+    
+    for idx, r in enumerate(results[:3], start=1):
+        ref = f"{r.legal_type} số {r.doc_number}"
+        if r.title:
+            ref += f" ({r.title})"
+        if r.article_hint:
+            ref += f" - {r.article_hint}"
+            
+        content_snippet = r.content.strip()
+        if "Nội dung:" in content_snippet:
+            content_snippet = content_snippet.split("Nội dung:", 1)[1].strip()
+            
+        # Giới hạn độ dài snippet để tránh làm answer quá dài
+        if len(content_snippet) > 300:
+            content_snippet = content_snippet[:297] + "..."
+            
+        analysis.append(f"- Căn cứ {idx} quy định: {content_snippet}")
+        cơ_sở.append(f"- {r.article_hint or 'Quy định'} {r.legal_type} số {r.doc_number}")
+
+    answer_parts.append("2. Phân tích chi tiết:\n" + "\n".join(analysis))
+    answer_parts.append("3. Căn cứ pháp lý:\n" + "\n".join(cơ_sở))
+    answer_parts.append("4. Hạn chế của dữ liệu (nếu có): Do phương pháp trích xuất tự động, vui lòng tra cứu văn bản gốc để xem toàn bộ nội dung chi tiết.")
+    
+    return "\n\n".join(answer_parts)
+
+
+def build_submission_entry(qid: int, question: str, results: list, answer: str = "") -> dict:
     """Tạo một entry trong results.json theo đúng format cuộc thi."""
     docs_seen = set()
     articles_seen = set()
@@ -52,7 +157,7 @@ def build_submission_entry(qid: int, question: str, results: list) -> dict:
     return {
         "id": qid,
         "question": question,
-        "answer": "",           # để trống, phần LLM sẽ điền sau
+        "answer": answer,
         "relevant_docs": relevant_docs,
         "relevant_articles": relevant_articles,
     }
@@ -60,7 +165,7 @@ def build_submission_entry(qid: int, question: str, results: list) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Batch retrieval → results.json"
+        description="Batch retrieval + LLM Qwen3 → results.json"
     )
     parser.add_argument("--input", "-i", required=True,
                         help="File JSON danh sách câu hỏi [{id, question}, ...]")
@@ -69,11 +174,17 @@ def main():
     parser.add_argument("--mode", "-m", choices=["fts", "vector", "hybrid"],
                         default="hybrid")
     parser.add_argument("--top-k", "-k", type=int, default=10)
-    parser.add_argument("--vector-weight", type=float, default=0.6)
-    parser.add_argument("--fts-weight", type=float, default=0.4)
+    parser.add_argument("--vector-weight", type=float, default=0.5)
+    parser.add_argument("--fts-weight", type=float, default=0.5)
     parser.add_argument("--rrf-k", type=int, default=60)
     parser.add_argument("--local", "-l", action="store_true",
                         help="Dung local SQLite thay vi Supabase (offline mode)")
+    parser.add_argument("--rerank", "-r", action="store_true",
+                        help="Kích hoạt Reranker PhoRanker để tăng độ chính xác tìm kiếm")
+    parser.add_argument("--llm", action="store_true",
+                        help="Kích hoạt mô hình sinh câu trả lời tự động")
+    parser.add_argument("--llm-model", default="Qwen/Qwen3-8B-Instruct",
+                        help="Tên mô hình LLM trên HuggingFace (mặc định: Qwen/Qwen3-8B-Instruct)")
     args = parser.parse_args()
 
     # Load câu hỏi
@@ -84,7 +195,7 @@ def main():
         questions = [questions]
 
     print(f"[batch] {len(questions)} questions from {args.input}")
-    print(f"[batch] Mode: {args.mode} | Top-K: {args.top_k}")
+    print(f"[batch] Mode: {args.mode} | Top-K: {args.top_k} | Rerank: {args.rerank} | LLM: {args.llm}")
     print("-" * 60)
 
     # Chọn retriever
@@ -117,6 +228,12 @@ def main():
                 rrf_k=args.rrf_k,
             )
 
+    # Khởi tạo Generator nếu chọn sinh câu trả lời
+    generator = None
+    if args.llm:
+        from retrieval.qwen_generator import QwenGenerator
+        generator = QwenGenerator(model_name=args.llm_model)
+
     submission = []
     total_time = 0.0
 
@@ -130,22 +247,49 @@ def main():
 
         t0 = time.time()
         try:
-            results = retriever.retrieve(question, mode=args.mode, top_k=args.top_k)
+            # Truy xuất thông tin (Kèm rerank nếu bật)
+            results = retriever.retrieve(
+                question, 
+                mode=args.mode, 
+                top_k=args.top_k, 
+                rerank=args.rerank
+            )
+            
+            # Sinh câu trả lời (Dùng Qwen nếu bật, ngược lại dùng Rule-based để trích dẫn trực tiếp)
+            answer = ""
+            if generator is not None:
+                # Chỉ lấy 5 đoạn trích xuất tốt nhất làm ngữ cảnh để không vượt quá context window
+                max_retries = 2
+                warning_msg = None
+                for attempt in range(max_retries):
+                    answer = generator.generate_answer(question, results[:5], warning_msg=warning_msg)
+                    is_valid, err_msg = validate_citations_detailed(answer, results[:5])
+                    if is_valid:
+                        break
+                    else:
+                        print(f"  [{idx:3d}/{len(questions)}] id={qid} ⚠ Phát hiện lỗi sinh ({err_msg}) lần {attempt+1}. Đang sinh lại...")
+                        warning_msg = f"LƯU Ý LỚN: Ở lượt sinh trước, bạn đã mắc lỗi: {err_msg}. Hãy chú ý sửa lỗi này, không được lặp lại và không dẫn chiếu sai lệch."
+                else:
+                    print(f"  [{idx:3d}/{len(questions)}] id={qid} ⚠ Đã thử {max_retries} lần vẫn lỗi. Fallback sang Rule-based.")
+                    answer = generate_rule_based_answer(results)
+            else:
+                answer = generate_rule_based_answer(results)
+
             elapsed = time.time() - t0
             total_time += elapsed
 
-            entry = build_submission_entry(qid, question, results)
+            entry = build_submission_entry(qid, question, results, answer=answer)
             submission.append(entry)
 
             docs_count = len(entry["relevant_docs"])
             arts_count = len(entry["relevant_articles"])
+            has_ans = "Yes" if answer else "No"
             print(f"  [{idx:3d}/{len(questions)}] id={qid} | "
-                  f"{docs_count} docs, {arts_count} articles | {elapsed:.2f}s")
+                  f"{docs_count} docs, {arts_count} articles | LLM Answer: {has_ans} | {elapsed:.2f}s")
 
         except Exception as e:
             elapsed = time.time() - t0
             print(f"  [{idx:3d}/{len(questions)}] id={qid} ✗ LỖI: {e} ({elapsed:.2f}s)")
-            # Vẫn thêm entry rỗng để không bị thiếu câu
             submission.append({
                 "id": qid,
                 "question": question,

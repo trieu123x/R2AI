@@ -301,13 +301,92 @@ class LegalRetriever:
             ))
         return results
 
+    def are_chunks_duplicate(self, c1: RetrievalResult, c2: RetrievalResult) -> bool:
+        """Kiểm tra xem hai chunk có trùng lặp nội dung đáng kể hay không."""
+        if c1.document_id == c2.document_id and c1.chunk_index == c2.chunk_index:
+            return True
+            
+        body1 = c1.content.split("| Nội dung:")[-1].strip()
+        body2 = c2.content.split("| Nội dung:")[-1].strip()
+        
+        def normalize(text):
+            text = text.lower()
+            text = re.sub(r'[^\w\s]', '', text)
+            return set(text.split())
+            
+        words1 = normalize(body1)
+        words2 = normalize(body2)
+        if not words1 or not words2:
+            return False
+            
+        intersection = words1.intersection(words2)
+        union = words1.union(words2)
+        jaccard = len(intersection) / len(union)
+        
+        if jaccard > 0.8:
+            return True
+            
+        if c1.article_hint and c2.article_hint and c1.article_hint == c2.article_hint:
+            if "điều" in c1.article_hint.lower() or "khoản" in c1.article_hint.lower():
+                if jaccard > 0.6:
+                    return True
+        return False
+
     # ── Entry point chung ────────────────────────────────────────────────────────
+
+    def rerank(self, query: str, results: List[RetrievalResult], top_k: Optional[int] = None) -> List[RetrievalResult]:
+        if not results:
+            return []
+            
+        if getattr(self, "_reranker", None) is None:
+            import torch
+            from sentence_transformers import CrossEncoder
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print(f"[retriever] Loading reranker model itdainb/PhoRanker on device '{device}'...", flush=True)
+            t0 = time.time()
+            self._reranker = CrossEncoder("itdainb/PhoRanker", device=device)
+            if device == "cuda" and hasattr(self._reranker.model, "half"):
+                self._reranker.model.half()
+            print(f"[retriever] Reranker model loaded in {time.time()-t0:.1f}s", flush=True)
+            
+        segmented_query = query
+        try:
+            import underthesea
+            segmented_query = underthesea.word_tokenize(query, format="text")
+        except Exception as e:
+            pass
+            
+        pairs = []
+        for r in results:
+            pairs.append([segmented_query, r.content])
+            
+        t_rerank = time.time()
+        scores = self._reranker.predict(pairs, show_progress_bar=False)
+        print(f"[retriever] Reranking took {time.time() - t_rerank:.2f}s for {len(pairs)} pairs.")
+        
+        legal_bonus = {
+            "Luật": 0.15,
+            "Nghị định": 0.10,
+            "Thông tư": 0.00
+        }
+        
+        for r, score in zip(results, scores):
+            final_score = float(score)
+            bonus = legal_bonus.get(r.legal_type, 0.0)
+            r.score = final_score + bonus
+            r.source = f"rerank({r.source})"
+            
+        results.sort(key=lambda x: x.score, reverse=True)
+        
+        k = top_k or self.top_k
+        return results[:k]
 
     def retrieve(
         self,
         query: str,
         mode: Literal["vector", "fts", "hybrid"] = "hybrid",
         top_k: Optional[int] = None,
+        rerank: bool = False,
     ) -> List[RetrievalResult]:
         """
         Truy xuất kết quả theo mode.
@@ -316,17 +395,41 @@ class LegalRetriever:
             query : câu hỏi pháp lý tiếng Việt
             mode  : "vector" | "fts" | "hybrid" (mặc định hybrid)
             top_k : số kết quả (override top_k của instance)
+            rerank: bật reranking bằng PhoRanker
         """
         t0 = time.time()
-        if mode == "vector":
-            results = self.vector_search(query, top_k=top_k)
-        elif mode == "fts":
-            results = self.fts_search(query, top_k=top_k)
+        k = top_k or self.top_k
+        
+        if rerank:
+            fetch_k = 20
         else:
-            results = self.hybrid_search(query, top_k=top_k)
+            fetch_k = max(30, k * 4)
+        
+        if mode == "vector":
+            results = self.vector_search(query, top_k=fetch_k)
+        elif mode == "fts":
+            results = self.fts_search(query, top_k=fetch_k)
+        else:
+            results = self.hybrid_search(query, top_k=fetch_k)
+
+        # Lọc trùng lặp
+        unique_results = []
+        for r in results:
+            is_dup = False
+            for ur in unique_results:
+                if self.are_chunks_duplicate(r, ur):
+                    is_dup = True
+                    break
+            if not is_dup:
+                unique_results.append(r)
+                
+        if rerank:
+            results = self.rerank(query, unique_results, top_k=k)
+        else:
+            results = unique_results[:k]
 
         elapsed = time.time() - t0
-        print(f"[retriever] mode={mode} | {len(results)} kết quả | {elapsed:.2f}s")
+        print(f"[retriever] mode={mode} | rerank={rerank} | {len(results)} kết quả | {elapsed:.2f}s")
         return results
 
     # ── Dedup + aggregate theo document ─────────────────────────────────────────

@@ -1,0 +1,21 @@
+Question
+    ↓
+Query Rewrite
+    ↓
+BM25 (top 10)
+    +
+Embedding (top 10)
+    ↓
+Merge
+    ↓
+Reranker
+    ↓
+Top 5
+    ↓
+Context Compression
+    ↓
+Qwen3-8B
+    ↓
+Citation Validation
+    ↓
+Final Answer

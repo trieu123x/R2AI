@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.json
 
 # Database files
 database/*.db

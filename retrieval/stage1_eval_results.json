@@ -3,7 +3,7 @@
     "id": 1,
     "question": "Các cơ sở ươm tạo và khu làm việc chung được hưởng những chính sách hỗ trợ nào về thuế và đất đai?",
     "fts": {
-      "time": 0.7900888919830322,
+      "time": 1.0887558460235596,
       "top_results": [
         "49/NQ-CP",
         "19/2009/TT-BQP",
@@ -11,7 +11,7 @@
       ]
     },
     "vector": {
-      "time": 0.11803936958312988,
+      "time": 0.1458573341369629,
       "top_results": [
         "07/2020/TT-BKHCN",
         "07/2020/TT-BKHCN",
@@ -19,55 +19,63 @@
       ]
     },
     "hybrid": {
-      "time": 0.6858859062194824,
+      "time": 0.7906405925750732,
+      "top_results": [
+        "07/2020/TT-BKHCN",
+        "07/2020/TT-BKHCN",
+        "07/2020/TT-BKHCN"
+      ]
+    },
+    "rerank": {
+      "time": 1.167992353439331,
       "top_results": [
         {
+          "doc_number": "205/2025/NĐ-CP",
+          "title": "sửa đổi Nghị định 111/2015/NĐ-CP về phát triển công nghiệp hỗ trợ",
+          "article": "Điều 1",
+          "score": 0.8179123401641846
+        },
+        {
           "doc_number": "07/2020/TT-BKHCN",
           "title": "hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
-          "article": "Điều 5",
-          "score": 0.009836065573770491
+          "article": "Điều 10",
+          "score": 0.10569103807210922
         },
         {
           "doc_number": "07/2020/TT-BKHCN",
           "title": "hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
           "article": "Điều 5",
-          "score": 0.00967741935483871
-        },
-        {
-          "doc_number": "07/2020/TT-BKHCN",
-          "title": "hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
-          "article": "Điều 3",
-          "score": 0.009523809523809523
+          "score": 0.07368001341819763
         },
         {
           "doc_number": "07/2020/TT-BKHCN",
           "title": "hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
           "article": "Điều 5",
-          "score": 0.009375
+          "score": 0.045136578381061554
         },
         {
           "doc_number": "07/2020/TT-BKHCN",
           "title": "hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
           "article": "Điều 6",
-          "score": 0.00923076923076923
+          "score": 0.04143109172582626
         }
       ]
     },
-    "top_hybrid_doc": "07/2020/TT-BKHCN (hướng dẫn về việc thành lập cơ...)"
+    "top_hybrid_doc": "205/2025/NĐ-CP (sửa đổi Nghị định 111/2015/NĐ-...)"
   },
   {
     "id": 2,
     "question": "Doanh nghiệp nhỏ và vừa được hưởng ưu đãi gì khi tham gia đấu thầu?",
     "fts": {
-      "time": 0.2906808853149414,
+      "time": 0.4477231502532959,
       "top_results": [
         "20/VBHN-VPQH",
-        "04/2017/QH14",
-        "22/NQ-CP"
+        "108/2009/NĐ-CP",
+        "62/1998/NĐ-CP"
       ]
     },
     "vector": {
-      "time": 0.1002342700958252,
+      "time": 0.13056397438049316,
       "top_results": [
         "04/2017/QH14",
         "06/2022/TT-BKHĐT",
@@ -75,37 +83,45 @@
       ]
     },
     "hybrid": {
-      "time": 0.4107081890106201,
+      "time": 0.5246696472167969,
+      "top_results": [
+        "04/2017/QH14",
+        "06/2022/TT-BKHĐT",
+        "04/2017/QH14"
+      ]
+    },
+    "rerank": {
+      "time": 0.8281736373901367,
       "top_results": [
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 13",
-          "score": 0.016287678476996297
-        },
-        {
-          "doc_number": "94/2020/NĐ-CP",
-          "title": "quy định về cơ chế, chính sách ưu đãi đối với Trung tâm Đổi mới sáng tạo Quốc gia",
-          "article": "Điều 10",
-          "score": 0.015061058344640433
+          "score": 0.9834771752357483
         },
         {
           "doc_number": "198/2025/QH15",
           "title": "về cơ chế, chính sách đặc biệt phát triển kinh tế tư nhân do Quốc hội ban hành",
           "article": "Điều 11",
-          "score": 0.014636174636174636
+          "score": 0.9699472188949585
         },
         {
-          "doc_number": "06/2022/TT-BKHĐT",
-          "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
-          "article": "Điều 15",
-          "score": 0.00967741935483871
-        },
-        {
-          "doc_number": "04/2017/QH14",
-          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
+          "doc_number": "94/2020/NĐ-CP",
+          "title": "quy định về cơ chế, chính sách ưu đãi đối với Trung tâm Đổi mới sáng tạo Quốc gia",
           "article": "Điều 10",
-          "score": 0.009523809523809523
+          "score": 0.8070316910743713
+        },
+        {
+          "doc_number": "66/2003/NĐ-CP",
+          "title": "sửa đổi Quy chế đấu thầu kèm theo Nghị định 88/1999/NĐ-CP và Nghị định 14/2000/NĐ-CP",
+          "article": "Điều 1",
+          "score": 0.17638161778450012
+        },
+        {
+          "doc_number": "94/2020/NĐ-CP",
+          "title": "quy định về cơ chế, chính sách ưu đãi đối với Trung tâm Đổi mới sáng tạo Quốc gia",
+          "article": "Điều 10",
+          "score": 0.07129743695259094
         }
       ]
     },
@@ -115,7 +131,7 @@
     "id": 3,
     "question": "Nếu công ty giữ bản chính bằng cấp của nhân viên khi ký hợp đồng thì sẽ bị xử lý như thế nào và phải khắc phục ra sao?",
     "fts": {
-      "time": 0.48447513580322266,
+      "time": 0.693662166595459,
       "top_results": [
         "131/2013/NĐ-CP",
         "131/2013/NĐ-CP",
@@ -123,7 +139,7 @@
       ]
     },
     "vector": {
-      "time": 0.1501932144165039,
+      "time": 0.15772223472595215,
       "top_results": [
         "82/2020/NĐ-CP",
         "33/2010/TT-BCA",
@@ -131,55 +147,63 @@
       ]
     },
     "hybrid": {
-      "time": 0.5372574329376221,
+      "time": 0.6521785259246826,
+      "top_results": [
+        "82/2020/NĐ-CP",
+        "33/2010/TT-BCA",
+        "110/2013/NĐ-CP"
+      ]
+    },
+    "rerank": {
+      "time": 1.1276390552520752,
       "top_results": [
         {
-          "doc_number": "82/2020/NĐ-CP",
-          "title": "quy định về xử phạt vi phạm hành chính trong lĩnh vực bổ trợ tư pháp; hành chính tư pháp; hôn nhân và gia đình; thi hành án dân sự; phá sản doanh nghiệp, hợp tác xã",
-          "article": "Điều 34",
-          "score": 0.009836065573770491
-        },
-        {
-          "doc_number": "33/2010/TT-BCA",
-          "title": "quy định điều kiện về an ninh, trật tự đối với ngành, nghề kinh doanh có điều kiện do Bộ Công an ban hành",
-          "article": "Điều 6",
-          "score": 0.00967741935483871
+          "doc_number": "110/2013/NĐ-CP",
+          "title": "quy định xử phạt vi phạm hành chính trong lĩnh vực bổ trợ tư pháp, hành chính tư pháp, hôn nhân và gia đình, thi hành án dân sự, phá sản doanh nghiệp, hợp tác xã",
+          "article": "Điều 12",
+          "score": 0.0005660507595166564
         },
         {
           "doc_number": "110/2013/NĐ-CP",
           "title": "quy định xử phạt vi phạm hành chính trong lĩnh vực bổ trợ tư pháp, hành chính tư pháp, hôn nhân và gia đình, thi hành án dân sự, phá sản doanh nghiệp, hợp tác xã",
           "article": "Điều 14",
-          "score": 0.009523809523809523
+          "score": 0.000331601535435766
         },
         {
-          "doc_number": "6545/VBHN-BTP",
-          "title": "Văn bản hợp nhất 6545/VBHN-BTP năm 2024 hợp nhất Nghị định quy định xử phạt vi phạm hành chính trong lĩnh vực bổ trợ tư pháp; hành chính tư pháp; hôn nhân và gia đình; thi hành án dân sự; phá sản doanh nghiệp, hợp tác xã do Bộ Tư pháp ban hành",
-          "article": "Điều 34",
-          "score": 0.009375
+          "doc_number": "110/2013/NĐ-CP",
+          "title": "quy định xử phạt vi phạm hành chính trong lĩnh vực bổ trợ tư pháp, hành chính tư pháp, hôn nhân và gia đình, thi hành án dân sự, phá sản doanh nghiệp, hợp tác xã",
+          "article": "Điều 25",
+          "score": 0.0002782996161840856
         },
         {
-          "doc_number": "13/2008/TT-BCA",
-          "title": "về hướng dẫn thực hiện Nghị định 59/2008/NĐ-CP về Giấy chứng minh Công an nhân dân do Bộ Công an ban hành",
-          "article": null,
-          "score": 0.00923076923076923
+          "doc_number": "1307/VBHN-BLĐTBXH",
+          "title": "Văn bản hợp nhất 1307/VBHN-BLĐTBXH năm 2019 hợp nhất Nghị định quy định về xử phạt vi phạm hành chính trong lĩnh vực giáo dục nghề nghiệp do Bộ Lao động - Thương binh và Xã hội ban hành",
+          "article": "Điều 17",
+          "score": 0.00023163296282291412
+        },
+        {
+          "doc_number": "462/VBHN-BTP",
+          "title": "Văn bản hợp nhất 462/VBHN-BTP năm 2016 hợp nhất Nghị định quy định xử phạt vi phạm hành chính trong lĩnh vực bổ trợ tư pháp, hành chính tư pháp, hôn nhân và gia đình, thi hành án dân sự, phá sản doanh nghiệp, hợp tác xã do Bộ Tư pháp ban hành",
+          "article": "Điều 24",
+          "score": 0.000179970171302557
         }
       ]
     },
-    "top_hybrid_doc": "82/2020/NĐ-CP (quy định về xử phạt vi phạm hà...)"
+    "top_hybrid_doc": "110/2013/NĐ-CP (quy định xử phạt vi phạm hành ...)"
   },
   {
     "id": 4,
     "question": "Hộ kinh doanh cần đáp ứng điều kiện gì để được hưởng hỗ trợ khi chuyển đổi thành doanh nghiệp nhỏ và vừa?",
     "fts": {
-      "time": 0.8277602195739746,
+      "time": 1.7427148818969727,
       "top_results": [
-        "187/2004/NĐ-CP",
-        "109/2007/NĐ-CP",
-        "40-TC/TCT/CS"
+        "28/2015/NĐ-CP",
+        "03-TT/LB",
+        "374/2025/NĐ-CP"
       ]
     },
     "vector": {
-      "time": 0.14917850494384766,
+      "time": 0.12517976760864258,
       "top_results": [
         "04/2017/QH14",
         "20/VBHN-VPQH",
@@ -187,37 +211,45 @@
       ]
     },
     "hybrid": {
-      "time": 0.8435602188110352,
+      "time": 1.6672251224517822,
+      "top_results": [
+        "04/2017/QH14",
+        "20/VBHN-VPQH",
+        "04/2017/QH14"
+      ]
+    },
+    "rerank": {
+      "time": 2.1351304054260254,
       "top_results": [
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 16",
-          "score": 0.009836065573770491
+          "score": 0.9806578159332275
         },
         {
           "doc_number": "20/VBHN-VPQH",
           "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
           "article": "Điều 16",
-          "score": 0.00967741935483871
-        },
-        {
-          "doc_number": "04/2017/QH14",
-          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
-          "article": "Điều 16",
-          "score": 0.009523809523809523
-        },
-        {
-          "doc_number": "20/VBHN-VPQH",
-          "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
-          "article": "Điều 16",
-          "score": 0.009375
+          "score": 0.9792216420173645
         },
         {
           "doc_number": "80/2021/NĐ-CP",
           "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
           "article": "Điều 15",
-          "score": 0.00923076923076923
+          "score": 0.9496124982833862
+        },
+        {
+          "doc_number": "39/2018/NĐ-CP",
+          "title": "về hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 15",
+          "score": 0.9456498026847839
+        },
+        {
+          "doc_number": "04/2017/QH14",
+          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
+          "article": "Điều 16",
+          "score": 0.8714065551757812
         }
       ]
     },
@@ -227,7 +259,7 @@
     "id": 5,
     "question": "Công ty nhỏ và vừa được hỗ trợ giá thuê mặt bằng sản xuất trong thời gian tối đa là bao lâu?",
     "fts": {
-      "time": 0.5654120445251465,
+      "time": 0.8281419277191162,
       "top_results": [
         "44-L/CTN",
         "207/2014/TT-BTC",
@@ -235,7 +267,7 @@
       ]
     },
     "vector": {
-      "time": 0.14772701263427734,
+      "time": 0.1318519115447998,
       "top_results": [
         "04/2017/QH14",
         "04/2017/QH14",
@@ -243,37 +275,45 @@
       ]
     },
     "hybrid": {
-      "time": 0.679922342300415,
+      "time": 0.838374137878418,
+      "top_results": [
+        "04/2017/QH14",
+        "04/2017/QH14",
+        "20/VBHN-VPQH"
+      ]
+    },
+    "rerank": {
+      "time": 1.308910608291626,
       "top_results": [
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 11",
-          "score": 0.009836065573770491
-        },
-        {
-          "doc_number": "04/2017/QH14",
-          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
-          "article": "Điều 11",
-          "score": 0.00967741935483871
+          "score": 0.9774288535118103
         },
         {
           "doc_number": "20/VBHN-VPQH",
           "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
           "article": "Điều 11",
-          "score": 0.009523809523809523
+          "score": 0.9727922081947327
         },
         {
           "doc_number": "80/2021/NĐ-CP",
           "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
           "article": "Điều 22",
-          "score": 0.009375
+          "score": 0.950843870639801
         },
         {
-          "doc_number": "20/VBHN-VPQH",
-          "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
+          "doc_number": "198/2025/QH15",
+          "title": "về cơ chế, chính sách đặc biệt phát triển kinh tế tư nhân do Quốc hội ban hành",
+          "article": "Điều 7",
+          "score": 0.8845224976539612
+        },
+        {
+          "doc_number": "04/2017/QH14",
+          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 11",
-          "score": 0.00923076923076923
+          "score": 0.6349080204963684
         }
       ]
     },
@@ -283,7 +323,7 @@
     "id": 6,
     "question": "Khi lập Báo cáo tài chính năm, công ty phải trình bày những thông tin chung nào về doanh nghiệp?",
     "fts": {
-      "time": 0.22543072700500488,
+      "time": 0.26626157760620117,
       "top_results": [
         "133/2016/TT-BTC",
         "200/2014/TT-BTC",
@@ -291,7 +331,7 @@
       ]
     },
     "vector": {
-      "time": 0.09990239143371582,
+      "time": 0.13855695724487305,
       "top_results": [
         "13/1999/QH10",
         "67/VBHN-VPQH",
@@ -299,37 +339,45 @@
       ]
     },
     "hybrid": {
-      "time": 1.2591018676757812,
+      "time": 1.6049838066101074,
+      "top_results": [
+        "04/VBHN-BTC",
+        "99/2025/TT-BTC",
+        "13/1999/QH10"
+      ]
+    },
+    "rerank": {
+      "time": 2.0433807373046875,
       "top_results": [
         {
           "doc_number": "04/VBHN-BTC",
           "title": "Văn bản hợp nhất 04/VBHN-BTC năm 2020 hợp nhất Thông tư hướng dẫn Chế độ kế toán doanh nghiệp do Bộ Tài chính ban hành",
           "article": "Điều 111",
-          "score": 0.015244755244755244
+          "score": 0.9898067116737366
+        },
+        {
+          "doc_number": "200/2014/TT-BTC",
+          "title": "hướng dẫn Chế độ kế toán Doanh nghiệp do Bộ Tài chính ban hành",
+          "article": "Điều 111",
+          "score": 0.9885944128036499
         },
         {
           "doc_number": "99/2025/TT-BTC",
           "title": "hướng dẫn Chế độ kế toán doanh nghiệp do Bộ trưởng Bộ Tài chính ban hành",
           "article": "Điều 31",
-          "score": 0.01446917808219178
+          "score": 0.9728508591651917
+        },
+        {
+          "doc_number": "116/2020/TT-BTC",
+          "title": "hướng dẫn về quản trị công ty áp dụng đối với công ty đại chúng tại Nghị định 155/2020/NĐ-CP hướng dẫn Luật Chứng khoán do Bộ trưởng Bộ Tài chính ban hành",
+          "article": "Điều 55",
+          "score": 0.44680869579315186
         },
         {
           "doc_number": "13/1999/QH10",
           "title": "Luật Doanh nghiệp 1999",
           "article": "Điều 118",
-          "score": 0.009836065573770491
-        },
-        {
-          "doc_number": "67/VBHN-VPQH",
-          "title": "Văn bản hợp nhất 67/VBHN-VPQH năm 2025 hợp nhất Luật Doanh nghiệp do Văn phòng Quốc hội ban hành",
-          "article": "Điều 197",
-          "score": 0.00967741935483871
-        },
-        {
-          "doc_number": "60/2005/QH11",
-          "title": "Luật Doanh nghiệp 2005",
-          "article": "Điều 148",
-          "score": 0.009523809523809523
+          "score": 0.288320392370224
         }
       ]
     },
@@ -339,15 +387,15 @@
     "id": 7,
     "question": "Nếu công ty chậm đóng bảo hiểm xã hội bắt buộc cho nhân viên thì sẽ bị xử phạt như thế nào?",
     "fts": {
-      "time": 0.3160228729248047,
+      "time": 0.47508764266967773,
       "top_results": [
         "86/2010/NĐ-CP",
-        "922/VBHN-BHXH",
-        "2525/VBHN-BHXH"
+        "86/2010/NĐ-CP",
+        "95/2013/NĐ-CP"
       ]
     },
     "vector": {
-      "time": 0.1270887851715088,
+      "time": 0.15309786796569824,
       "top_results": [
         "58/2014/QH13",
         "19/VBHN-VPQH",
@@ -355,47 +403,55 @@
       ]
     },
     "hybrid": {
-      "time": 0.456406831741333,
+      "time": 0.4779951572418213,
+      "top_results": [
+        "58/2014/QH13",
+        "19/VBHN-VPQH",
+        "50/VBHN-VPQH"
+      ]
+    },
+    "rerank": {
+      "time": 0.763970136642456,
       "top_results": [
         {
-          "doc_number": "41/2024/QH15",
-          "title": "Luật Bảo hiểm xã hội 2024",
-          "article": "Điều 40",
-          "score": 0.014487179487179487
+          "doc_number": "86/2010/NĐ-CP",
+          "title": "quy định xử phạt vi phạm hành chính trong lĩnh vực bảo hiểm xã hội",
+          "article": "Điều 10",
+          "score": 0.7731781005859375
         },
         {
-          "doc_number": "58/2014/QH13",
-          "title": "Luật Bảo hiểm xã hội 2014",
-          "article": "Điều 122",
-          "score": 0.009836065573770491
+          "doc_number": "28/2020/NĐ-CP",
+          "title": "quy định về xử phạt vi phạm hành chính trong lĩnh vực lao động, bảo hiểm xã hội, đưa người lao động Việt Nam đi làm việc ở nước ngoài theo hợp đồng",
+          "article": "Điều 38",
+          "score": 0.6284310221672058
         },
         {
-          "doc_number": "19/VBHN-VPQH",
-          "title": "Văn bản hợp nhất 19/VBHN-VPQH năm 2019 hợp nhất Luật Bảo hiểm xã hội do Văn phòng Quốc hội ban hành",
-          "article": "Điều 122",
-          "score": 0.00967741935483871
+          "doc_number": "135/2007/NĐ-CP",
+          "title": "về xử phạt vi phạm hành chính trong lĩnh vực bảo hiểm xã hội",
+          "article": "Điều 28",
+          "score": 0.5748552083969116
         },
         {
-          "doc_number": "50/VBHN-VPQH",
-          "title": "Văn bản hợp nhất 50/VBHN-VPQH năm 2018 hợp nhất Luật Bảo hiểm xã hội do Văn phòng Quốc hội ban hành",
-          "article": "Điều 122",
-          "score": 0.009523809523809523
+          "doc_number": "12/2022/NĐ-CP",
+          "title": "về xử phạt vi phạm hành chính trong lĩnh vực lao động, bảo hiểm xã hội, người lao động Việt Nam đi làm việc ở nước ngoài theo hợp đồng",
+          "article": "Điều 39",
+          "score": 0.5435646176338196
         },
         {
-          "doc_number": "85/1998/TT-BTC",
-          "title": "về Quy chế quản lý tài chính đối với Bảo hiểm xã hội Việt Nam do Bộ Tài Chính ban hành",
-          "article": "Điều 11",
-          "score": 0.009375
+          "doc_number": "135/2007/NĐ-CP",
+          "title": "về xử phạt vi phạm hành chính trong lĩnh vực bảo hiểm xã hội",
+          "article": "Điều 10",
+          "score": 0.4747087061405182
         }
       ]
     },
-    "top_hybrid_doc": "41/2024/QH15 (Luật Bảo hiểm xã hội 2024...)"
+    "top_hybrid_doc": "86/2010/NĐ-CP (quy định xử phạt vi phạm hành ...)"
   },
   {
     "id": 8,
     "question": "Doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo cần đáp ứng điều kiện nào để được hỗ trợ?",
     "fts": {
-      "time": 0.9964210987091064,
+      "time": 1.5283119678497314,
       "top_results": [
         "07/2020/TT-BKHCN",
         "07/2020/TT-BKHCN",
@@ -403,7 +459,7 @@
       ]
     },
     "vector": {
-      "time": 0.13686704635620117,
+      "time": 0.13854026794433594,
       "top_results": [
         "04/2017/QH14",
         "04/2017/QH14",
@@ -411,37 +467,45 @@
       ]
     },
     "hybrid": {
-      "time": 1.207207202911377,
+      "time": 1.5610358715057373,
+      "top_results": [
+        "04/2017/QH14",
+        "04/2017/QH14",
+        "20/VBHN-VPQH"
+      ]
+    },
+    "rerank": {
+      "time": 2.1179451942443848,
       "top_results": [
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
-          "article": "Điều 18",
-          "score": 0.015647568608570053
-        },
-        {
-          "doc_number": "04/2017/QH14",
-          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
-          "article": "Điều 18",
-          "score": 0.015625
-        },
-        {
-          "doc_number": "20/VBHN-VPQH",
-          "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
-          "article": "Điều 18",
-          "score": 0.014705882352941176
-        },
-        {
-          "doc_number": "04/2017/QH14",
-          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 17",
-          "score": 0.009836065573770491
+          "score": 0.9934679865837097
+        },
+        {
+          "doc_number": "39/2018/NĐ-CP",
+          "title": "về hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 20",
+          "score": 0.9739567637443542
         },
         {
           "doc_number": "80/2021/NĐ-CP",
           "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
           "article": "Điều 21",
-          "score": 0.009523809523809523
+          "score": 0.9735919237136841
+        },
+        {
+          "doc_number": "80/2021/NĐ-CP",
+          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 21",
+          "score": 0.9699099659919739
+        },
+        {
+          "doc_number": "06/2022/TT-BKHĐT",
+          "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
+          "article": "Điều 14",
+          "score": 0.9635152816772461
         }
       ]
     },
@@ -451,7 +515,7 @@
     "id": 9,
     "question": "Công ty sản xuất nhỏ và vừa tham gia chuỗi giá trị sẽ được hỗ trợ những nội dung gì?",
     "fts": {
-      "time": 1.187835931777954,
+      "time": 1.687387228012085,
       "top_results": [
         "80/2021/NĐ-CP",
         "06/2022/TT-BKHĐT",
@@ -459,7 +523,7 @@
       ]
     },
     "vector": {
-      "time": 0.19379425048828125,
+      "time": 0.12975311279296875,
       "top_results": [
         "06/2022/TT-BKHĐT",
         "04/2017/QH14",
@@ -467,47 +531,55 @@
       ]
     },
     "hybrid": {
-      "time": 1.2337510585784912,
+      "time": 1.7230572700500488,
+      "top_results": [
+        "06/2022/TT-BKHĐT",
+        "04/2017/QH14",
+        "20/VBHN-VPQH"
+      ]
+    },
+    "rerank": {
+      "time": 2.0947768688201904,
       "top_results": [
         {
-          "doc_number": "06/2022/TT-BKHĐT",
-          "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
-          "article": "Điều 17",
-          "score": 0.016287678476996297
+          "doc_number": "39/2018/NĐ-CP",
+          "title": "về hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 24",
+          "score": 0.9930302500724792
+        },
+        {
+          "doc_number": "80/2021/NĐ-CP",
+          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 25",
+          "score": 0.9911354780197144
         },
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 19",
-          "score": 0.01602662570404506
+          "score": 0.9892792105674744
         },
         {
           "doc_number": "20/VBHN-VPQH",
           "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
           "article": "Điều 19",
-          "score": 0.015677655677655677
+          "score": 0.9875400066375732
         },
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 19",
-          "score": 0.015073529411764706
-        },
-        {
-          "doc_number": "06/2022/TT-BKHĐT",
-          "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
-          "article": "Điều 17",
-          "score": 0.014864572047670638
+          "score": 0.9873421788215637
         }
       ]
     },
-    "top_hybrid_doc": "06/2022/TT-BKHĐT (hướng dẫn Nghị định 80/2021/NĐ...)"
+    "top_hybrid_doc": "39/2018/NĐ-CP (về hướng dẫn Luật Hỗ trợ doanh...)"
   },
   {
     "id": 10,
     "question": "Quỹ phát triển doanh nghiệp nhỏ và vừa thực hiện những chức năng hỗ trợ gì cho doanh nghiệp?",
     "fts": {
-      "time": 0.153184175491333,
+      "time": 0.17797589302062988,
       "top_results": [
         "04/2017/QH14",
         "20/VBHN-VPQH",
@@ -515,7 +587,7 @@
       ]
     },
     "vector": {
-      "time": 0.11706018447875977,
+      "time": 0.13127970695495605,
       "top_results": [
         "04/2017/QH14",
         "20/VBHN-VPQH",
@@ -523,37 +595,45 @@
       ]
     },
     "hybrid": {
-      "time": 0.29779958724975586,
+      "time": 0.24212384223937988,
+      "top_results": [
+        "04/2017/QH14",
+        "20/VBHN-VPQH",
+        "198/2025/QH15"
+      ]
+    },
+    "rerank": {
+      "time": 1.5763390064239502,
       "top_results": [
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 20",
-          "score": 0.016393442622950817
-        },
-        {
-          "doc_number": "20/VBHN-VPQH",
-          "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
-          "article": "Điều 20",
-          "score": 0.016129032258064516
+          "score": 0.9908722043037415
         },
         {
           "doc_number": "198/2025/QH15",
           "title": "về cơ chế, chính sách đặc biệt phát triển kinh tế tư nhân do Quốc hội ban hành",
           "article": "Điều 9",
-          "score": 0.01544011544011544
+          "score": 0.9885063171386719
+        },
+        {
+          "doc_number": "20/VBHN-VPQH",
+          "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
+          "article": "Điều 20",
+          "score": 0.9856143593788147
         },
         {
           "doc_number": "39/2019/NĐ-CP",
           "title": "về tổ chức và hoạt động của Quỹ Phát triển doanh nghiệp nhỏ và vừa",
-          "article": "Điều 51",
-          "score": 0.014251207729468598
+          "article": "Điều 33",
+          "score": 0.9821847081184387
         },
         {
-          "doc_number": "35/NQ-CP",
-          "title": "năm 2016 về hỗ trợ và phát triển doanh nghiệp đến năm 2020 do Chính phủ ban hành",
-          "article": null,
-          "score": 0.0136986301369863
+          "doc_number": "39/2019/NĐ-CP",
+          "title": "về tổ chức và hoạt động của Quỹ Phát triển doanh nghiệp nhỏ và vừa",
+          "article": "Điều 5",
+          "score": 0.9705862402915955
         }
       ]
     },
@@ -563,15 +643,15 @@
     "id": 11,
     "question": "Để được xác định là doanh nghiệp nhỏ và vừa thì số lao động tham gia bảo hiểm xã hội bình quân năm tối đa là bao nhiêu người?",
     "fts": {
-      "time": 0.5877342224121094,
+      "time": 0.848538875579834,
       "top_results": [
         "06/2001/TT-BLĐTBXH",
-        "65-TTg-NC",
-        "21-TC/CNA"
+        "29/2017/TT-BLĐTBXH",
+        "208-NV/PC"
       ]
     },
     "vector": {
-      "time": 0.16403722763061523,
+      "time": 0.15458178520202637,
       "top_results": [
         "80/2021/NĐ-CP",
         "39/2018/NĐ-CP",
@@ -579,47 +659,55 @@
       ]
     },
     "hybrid": {
-      "time": 0.9204368591308594,
+      "time": 0.9317748546600342,
       "top_results": [
-        {
-          "doc_number": "80/2021/NĐ-CP",
-          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
-          "article": "Điều 7",
-          "score": 0.009836065573770491
-        },
+        "80/2021/NĐ-CP",
+        "39/2018/NĐ-CP",
+        "80/2021/NĐ-CP"
+      ]
+    },
+    "rerank": {
+      "time": 1.495201826095581,
+      "top_results": [
         {
           "doc_number": "39/2018/NĐ-CP",
           "title": "về hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
           "article": "Điều 8",
-          "score": 0.00967741935483871
-        },
-        {
-          "doc_number": "80/2021/NĐ-CP",
-          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
-          "article": "Điều 7",
-          "score": 0.009523809523809523
-        },
-        {
-          "doc_number": "80/2021/NĐ-CP",
-          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
-          "article": "Điều 5",
-          "score": 0.009375
+          "score": 0.8788609504699707
         },
         {
           "doc_number": "39/2018/NĐ-CP",
           "title": "về hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
           "article": "Điều 6",
-          "score": 0.00923076923076923
+          "score": 0.8615471720695496
+        },
+        {
+          "doc_number": "80/2021/NĐ-CP",
+          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 5",
+          "score": 0.8355188369750977
+        },
+        {
+          "doc_number": "80/2021/NĐ-CP",
+          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 7",
+          "score": 0.8341997265815735
+        },
+        {
+          "doc_number": "39/2018/NĐ-CP",
+          "title": "về hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 6",
+          "score": 0.8260133862495422
         }
       ]
     },
-    "top_hybrid_doc": "80/2021/NĐ-CP (hướng dẫn Luật Hỗ trợ doanh ng...)"
+    "top_hybrid_doc": "39/2018/NĐ-CP (về hướng dẫn Luật Hỗ trợ doanh...)"
   },
   {
     "id": 12,
     "question": "Doanh nghiệp nhỏ và vừa có thể được hỗ trợ những gì để nâng cao khả năng tiếp cận tín dụng?",
     "fts": {
-      "time": 0.8524353504180908,
+      "time": 0.8685200214385986,
       "top_results": [
         "138/NQ-CP",
         "19-2018/NQ-CP",
@@ -627,7 +715,7 @@
       ]
     },
     "vector": {
-      "time": 0.1449110507965088,
+      "time": 0.16244935989379883,
       "top_results": [
         "04/2017/QH14",
         "20/VBHN-VPQH",
@@ -635,37 +723,45 @@
       ]
     },
     "hybrid": {
-      "time": 0.998084306716919,
+      "time": 0.9749572277069092,
+      "top_results": [
+        "04/2017/QH14",
+        "20/VBHN-VPQH",
+        "55/2019/NĐ-CP"
+      ]
+    },
+    "rerank": {
+      "time": 1.4129695892333984,
       "top_results": [
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 8",
-          "score": 0.009836065573770491
+          "score": 0.974494993686676
         },
         {
           "doc_number": "20/VBHN-VPQH",
           "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
           "article": "Điều 8",
-          "score": 0.00967741935483871
+          "score": 0.9694522023200989
         },
         {
-          "doc_number": "55/2019/NĐ-CP",
-          "title": "về hỗ trợ pháp lý cho doanh nghiệp nhỏ và vừa",
-          "article": "Điều 20",
-          "score": 0.009523809523809523
+          "doc_number": "80/2021/NĐ-CP",
+          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 27",
+          "score": 0.020891647785902023
         },
         {
-          "doc_number": "55/2019/NĐ-CP",
-          "title": "về hỗ trợ pháp lý cho doanh nghiệp nhỏ và vừa",
-          "article": "Điều 7",
-          "score": 0.009375
+          "doc_number": "04/2017/QH14",
+          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
+          "article": "Điều 17",
+          "score": 0.0145210986956954
         },
         {
-          "doc_number": "15/2022/TT-BKHCN",
-          "title": "quy định quản lý Chương trình quốc gia hỗ trợ doanh nghiệp nâng cao năng suất và chất lượng sản phẩm, hàng hóa giai đoạn 2021-2030 do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+          "doc_number": "04/2017/QH14",
+          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 9",
-          "score": 0.00923076923076923
+          "score": 0.0008788576233200729
         }
       ]
     },
@@ -675,7 +771,7 @@
     "id": 13,
     "question": "Quỹ bảo lãnh tín dụng doanh nghiệp nhỏ và vừa căn cứ vào những điều kiện nào để cấp bảo lãnh cho công ty?",
     "fts": {
-      "time": 1.4814107418060303,
+      "time": 1.5940544605255127,
       "top_results": [
         "34/2018/NĐ-CP",
         "57/2019/TT-BTC",
@@ -683,7 +779,7 @@
       ]
     },
     "vector": {
-      "time": 0.17698454856872559,
+      "time": 0.12670207023620605,
       "top_results": [
         "04/2017/QH14",
         "34/2018/NĐ-CP",
@@ -691,37 +787,45 @@
       ]
     },
     "hybrid": {
-      "time": 1.508699893951416,
+      "time": 1.7104878425598145,
+      "top_results": [
+        "34/2018/NĐ-CP",
+        "04/2017/QH14",
+        "34/2018/NĐ-CP"
+      ]
+    },
+    "rerank": {
+      "time": 2.1803081035614014,
       "top_results": [
         {
           "doc_number": "34/2018/NĐ-CP",
           "title": "về thành lập, tổ chức và hoạt động của Quỹ bảo lãnh tín dụng cho doanh nghiệp nhỏ và vừa do Chính phủ ban hành",
           "article": "Điều 16",
-          "score": 0.015927419354838712
+          "score": 0.9594858288764954
         },
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 9",
-          "score": 0.009836065573770491
-        },
-        {
-          "doc_number": "34/2018/NĐ-CP",
-          "title": "về thành lập, tổ chức và hoạt động của Quỹ bảo lãnh tín dụng cho doanh nghiệp nhỏ và vừa do Chính phủ ban hành",
-          "article": "Điều 17",
-          "score": 0.009523809523809523
+          "score": 0.9590603113174438
         },
         {
           "doc_number": "20/VBHN-VPQH",
           "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
           "article": "Điều 9",
-          "score": 0.009375
+          "score": 0.9467249512672424
         },
         {
           "doc_number": "34/2018/NĐ-CP",
           "title": "về thành lập, tổ chức và hoạt động của Quỹ bảo lãnh tín dụng cho doanh nghiệp nhỏ và vừa do Chính phủ ban hành",
           "article": "Điều 16",
-          "score": 0.00923076923076923
+          "score": 0.9449990391731262
+        },
+        {
+          "doc_number": "34/2018/NĐ-CP",
+          "title": "về thành lập, tổ chức và hoạt động của Quỹ bảo lãnh tín dụng cho doanh nghiệp nhỏ và vừa do Chính phủ ban hành",
+          "article": "Điều 17",
+          "score": 0.9427873492240906
         }
       ]
     },
@@ -731,7 +835,7 @@
     "id": 14,
     "question": "Khi nhận hỗ trợ từ Nhà nước, công ty nhỏ và vừa có trách nhiệm gì về nguồn lực đối ứng?",
     "fts": {
-      "time": 0.8909647464752197,
+      "time": 0.9864904880523682,
       "top_results": [
         "04/2017/QH14",
         "20/VBHN-VPQH",
@@ -739,7 +843,7 @@
       ]
     },
     "vector": {
-      "time": 0.17991113662719727,
+      "time": 0.1291675567626953,
       "top_results": [
         "04/2017/QH14",
         "20/VBHN-VPQH",
@@ -747,37 +851,45 @@
       ]
     },
     "hybrid": {
-      "time": 0.9519109725952148,
+      "time": 1.0540268421173096,
+      "top_results": [
+        "04/2017/QH14",
+        "20/VBHN-VPQH",
+        "8018/VBHN-BTP"
+      ]
+    },
+    "rerank": {
+      "time": 1.5177288055419922,
       "top_results": [
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 28",
-          "score": 0.016393442622950817
+          "score": 0.9848670363426208
         },
         {
           "doc_number": "20/VBHN-VPQH",
           "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
           "article": "Điều 28",
-          "score": 0.016129032258064516
+          "score": 0.9836904406547546
         },
         {
-          "doc_number": "8018/VBHN-BTP",
-          "title": "Văn bản hợp nhất 8018/VBHN-BTP năm 2013 hợp nhất Nghị định hướng dẫn Luật luật sư về tổ chức xã hội - nghề nghiệp của luật sư do Bộ Tư pháp ban hành",
-          "article": "Điều 4",
-          "score": 0.009523809523809523
-        },
-        {
-          "doc_number": "20/VBHN-VPQH",
-          "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
-          "article": "Điều 5",
-          "score": 0.009375
+          "doc_number": "04/2017/QH14",
+          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
+          "article": "Điều 21",
+          "score": 0.9013151526451111
         },
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 5",
-          "score": 0.00923076923076923
+          "score": 0.795742928981781
+        },
+        {
+          "doc_number": "20/VBHN-VPQH",
+          "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
+          "article": "Điều 5",
+          "score": 0.7743497490882874
         }
       ]
     },
@@ -787,7 +899,7 @@
     "id": 15,
     "question": "Công ty nhỏ và vừa có thể nhận nguồn vốn hỗ trợ từ những nguồn nào?",
     "fts": {
-      "time": 0.5126595497131348,
+      "time": 0.6639003753662109,
       "top_results": [
         "83/2012/TT-BTC",
         "138/NQ-CP",
@@ -795,7 +907,7 @@
       ]
     },
     "vector": {
-      "time": 0.1627192497253418,
+      "time": 0.10912322998046875,
       "top_results": [
         "04/2017/QH14",
         "80/2021/NĐ-CP",
@@ -803,37 +915,45 @@
       ]
     },
     "hybrid": {
-      "time": 0.652430534362793,
+      "time": 0.7675049304962158,
+      "top_results": [
+        "04/2017/QH14",
+        "20/VBHN-VPQH",
+        "80/2021/NĐ-CP"
+      ]
+    },
+    "rerank": {
+      "time": 1.156062126159668,
       "top_results": [
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 6",
-          "score": 0.016086065573770493
-        },
-        {
-          "doc_number": "80/2021/NĐ-CP",
-          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
-          "article": "Điều 8",
-          "score": 0.015474520804114072
+          "score": 0.9778427481651306
         },
         {
           "doc_number": "20/VBHN-VPQH",
           "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
           "article": "Điều 6",
-          "score": 0.014849498327759197
+          "score": 0.9691939353942871
         },
         {
-          "doc_number": "04/2017/QH14",
-          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
-          "article": "Điều 15",
-          "score": 0.009523809523809523
+          "doc_number": "80/2021/NĐ-CP",
+          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 8",
+          "score": 0.19519944489002228
+        },
+        {
+          "doc_number": "198/2025/QH15",
+          "title": "về cơ chế, chính sách đặc biệt phát triển kinh tế tư nhân do Quốc hội ban hành",
+          "article": "Điều 9",
+          "score": 0.13754014670848846
         },
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 5",
-          "score": 0.009375
+          "score": 0.13750377297401428
         }
       ]
     },
@@ -843,15 +963,15 @@
     "id": 16,
     "question": "Khóa đào tạo trực tiếp về quản trị doanh nghiệp cho doanh nghiệp nhỏ và vừa bao gồm những loại khóa đào tạo nào?",
     "fts": {
-      "time": 0.4820852279663086,
+      "time": 0.8138618469238281,
       "top_results": [
-        "52/2023/TT-BTC",
-        "13/2023/TT-BKHĐT",
-        "49/2019/TT-BTC"
+        "CEPT",
+        "CEPT",
+        "CEPT"
       ]
     },
     "vector": {
-      "time": 0.17322826385498047,
+      "time": 0.16138386726379395,
       "top_results": [
         "80/2021/NĐ-CP",
         "06/2022/TT-BKHĐT",
@@ -859,47 +979,55 @@
       ]
     },
     "hybrid": {
-      "time": 0.6625690460205078,
+      "time": 0.9812695980072021,
       "top_results": [
-        {
-          "doc_number": "52/2023/TT-BTC",
-          "title": "hướng dẫn cơ chế sử dụng kinh phí ngân sách Nhà nước chi thường xuyên hỗ trợ doanh nghiệp nhỏ và vừa theo quy định tại Nghị định 80/2021/NĐ-CP do Bộ trưởng Bộ Tài chính ban hành",
-          "article": "Điều 8",
-          "score": 0.014890710382513661
-        },
+        "52/2023/TT-BTC",
+        "80/2021/NĐ-CP",
+        "06/2022/TT-BKHĐT"
+      ]
+    },
+    "rerank": {
+      "time": 1.4368467330932617,
+      "top_results": [
         {
           "doc_number": "05/2019/TT-BKHĐT",
           "title": "hướng dẫn hỗ trợ phát triển nguồn nhân lực cho doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
           "article": "Điều 3",
-          "score": 0.014805194805194804
+          "score": 0.9815065860748291
         },
         {
-          "doc_number": "13/2023/TT-BKHĐT",
-          "title": "hướng dẫn cơ chế tổ chức thực hiện \"Chương trình hỗ trợ doanh nghiệp khu vực tư nhân kinh doanh bền vững giai đoạn 2022-2025\" kèm theo Quyết định 167/QĐ-TTg do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
-          "article": "Điều 14",
-          "score": 0.01415686274509804
-        },
-        {
-          "doc_number": "80/2021/NĐ-CP",
-          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
-          "article": "Điều 3",
-          "score": 0.009836065573770491
+          "doc_number": "52/2023/TT-BTC",
+          "title": "hướng dẫn cơ chế sử dụng kinh phí ngân sách Nhà nước chi thường xuyên hỗ trợ doanh nghiệp nhỏ và vừa theo quy định tại Nghị định 80/2021/NĐ-CP do Bộ trưởng Bộ Tài chính ban hành",
+          "article": "Điều 8",
+          "score": 0.9707363843917847
         },
         {
           "doc_number": "06/2022/TT-BKHĐT",
           "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
           "article": "Điều 12",
-          "score": 0.00967741935483871
+          "score": 0.9703318476676941
+        },
+        {
+          "doc_number": "80/2021/NĐ-CP",
+          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 3",
+          "score": 0.9629015922546387
+        },
+        {
+          "doc_number": "13/2023/TT-BKHĐT",
+          "title": "hướng dẫn cơ chế tổ chức thực hiện \"Chương trình hỗ trợ doanh nghiệp khu vực tư nhân kinh doanh bền vững giai đoạn 2022-2025\" kèm theo Quyết định 167/QĐ-TTg do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
+          "article": "Điều 14",
+          "score": 0.9618270993232727
         }
       ]
     },
-    "top_hybrid_doc": "52/2023/TT-BTC (hướng dẫn cơ chế sử dụng kinh ...)"
+    "top_hybrid_doc": "05/2019/TT-BKHĐT (hướng dẫn hỗ trợ phát triển ng...)"
   },
   {
     "id": 17,
     "question": "Bộ Tài chính có trách nhiệm hướng dẫn những nội dung gì về thuế và kế toán cho doanh nghiệp siêu nhỏ?",
     "fts": {
-      "time": 0.3299071788787842,
+      "time": 0.3549509048461914,
       "top_results": [
         "132/2018/TT-BTC",
         "04/2017/QH14",
@@ -907,7 +1035,7 @@
       ]
     },
     "vector": {
-      "time": 0.16958355903625488,
+      "time": 0.1350691318511963,
       "top_results": [
         "04/2017/QH14",
         "20/VBHN-VPQH",
@@ -915,37 +1043,45 @@
       ]
     },
     "hybrid": {
-      "time": 1.342250108718872,
+      "time": 1.5315656661987305,
+      "top_results": [
+        "04/2017/QH14",
+        "20/VBHN-VPQH",
+        "04/2017/QH14"
+      ]
+    },
+    "rerank": {
+      "time": 2.014094829559326,
       "top_results": [
         {
           "doc_number": "04/2017/QH14",
           "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
           "article": "Điều 23",
-          "score": 0.016287678476996297
+          "score": 0.995442271232605
         },
         {
           "doc_number": "20/VBHN-VPQH",
           "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
           "article": "Điều 23",
-          "score": 0.01602662570404506
+          "score": 0.9947261214256287
         },
         {
           "doc_number": "132/2018/TT-BTC",
           "title": "hướng dẫn Chế độ kế toán cho doanh nghiệp siêu nhỏ do Bộ trưởng Bộ Tài chính ban hành",
           "article": "Điều 8",
-          "score": 0.014424242424242424
+          "score": 0.9881029725074768
         },
         {
-          "doc_number": "04/2017/QH14",
-          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
-          "article": "Điều 24",
-          "score": 0.009523809523809523
+          "doc_number": "132/2018/TT-BTC",
+          "title": "hướng dẫn Chế độ kế toán cho doanh nghiệp siêu nhỏ do Bộ trưởng Bộ Tài chính ban hành",
+          "article": "Điều 8",
+          "score": 0.9861921072006226
         },
         {
-          "doc_number": "04/2017/QH14",
-          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
-          "article": "Điều 22",
-          "score": 0.009375
+          "doc_number": "132/2018/TT-BTC",
+          "title": "hướng dẫn Chế độ kế toán cho doanh nghiệp siêu nhỏ do Bộ trưởng Bộ Tài chính ban hành",
+          "article": "Điều 10",
+          "score": 0.9781182408332825
         }
       ]
     },
@@ -955,15 +1091,15 @@
     "id": 18,
     "question": "Để được lựa chọn là doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo, công ty cần cung cấp những loại giấy chứng nhận giải thưởng nào?",
     "fts": {
-      "time": 0.4465041160583496,
+      "time": 0.49891090393066406,
       "top_results": [
-        "75/2013/TT-BTC",
+        "86/2013/NĐ-CP",
         "11/2014/TT-BTC",
-        "76/2013/TT-BTC"
+        "86/2013/NĐ-CP"
       ]
     },
     "vector": {
-      "time": 0.21406030654907227,
+      "time": 0.11861038208007812,
       "top_results": [
         "06/2022/TT-BKHĐT",
         "33/2011/TT-BKHCN",
@@ -971,37 +1107,45 @@
       ]
     },
     "hybrid": {
-      "time": 0.585456132888794,
+      "time": 0.5620336532592773,
+      "top_results": [
+        "06/2022/TT-BKHĐT",
+        "33/2011/TT-BKHCN",
+        "33/2011/TT-BKHCN"
+      ]
+    },
+    "rerank": {
+      "time": 0.9838192462921143,
       "top_results": [
         {
           "doc_number": "06/2022/TT-BKHĐT",
           "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
           "article": "Điều 14",
-          "score": 0.009836065573770491
-        },
-        {
-          "doc_number": "33/2011/TT-BKHCN",
-          "title": "hướng dẫn về thẩm quyền, trình tự, thủ tục chứng nhận doanh nghiệp thành lập mới từ dự án đầu tư sản xuất sản phẩm thuộc danh mục sản phẩm công nghệ cao được khuyến khích phát triển do Bộ Khoa học và Công nghệ ban hành",
-          "article": "Điều 5",
-          "score": 0.00967741935483871
-        },
-        {
-          "doc_number": "33/2011/TT-BKHCN",
-          "title": "hướng dẫn về thẩm quyền, trình tự, thủ tục chứng nhận doanh nghiệp thành lập mới từ dự án đầu tư sản xuất sản phẩm thuộc danh mục sản phẩm công nghệ cao được khuyến khích phát triển do Bộ Khoa học và Công nghệ ban hành",
-          "article": "Điều 5",
-          "score": 0.009523809523809523
+          "score": 0.9828090071678162
         },
         {
           "doc_number": "80/2021/NĐ-CP",
           "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
           "article": "Điều 21",
-          "score": 0.009375
+          "score": 0.9752746224403381
         },
         {
-          "doc_number": "88/2006/NĐ-CP",
-          "title": "về việc đăng ký kinh doanh và cơ quan đăng ký kinh doanh",
-          "article": "Điều 16",
-          "score": 0.00923076923076923
+          "doc_number": "80/2021/NĐ-CP",
+          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 21",
+          "score": 0.6926620602607727
+        },
+        {
+          "doc_number": "04/2017/QH14",
+          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
+          "article": "Điều 17",
+          "score": 0.6242617964744568
+        },
+        {
+          "doc_number": "33/2011/TT-BKHCN",
+          "title": "hướng dẫn về thẩm quyền, trình tự, thủ tục chứng nhận doanh nghiệp thành lập mới từ dự án đầu tư sản xuất sản phẩm thuộc danh mục sản phẩm công nghệ cao được khuyến khích phát triển do Bộ Khoa học và Công nghệ ban hành",
+          "article": "Điều 7",
+          "score": 0.0032650367356836796
         }
       ]
     },
@@ -1011,7 +1155,7 @@
     "id": 19,
     "question": "Doanh nghiệp nhỏ và vừa được hỗ trợ tư vấn theo nội dung và mức hỗ trợ nào?",
     "fts": {
-      "time": 0.18477201461791992,
+      "time": 0.21173644065856934,
       "top_results": [
         "06/2019/TT-BKHĐT",
         "06/2019/TT-BKHĐT",
@@ -1019,7 +1163,7 @@
       ]
     },
     "vector": {
-      "time": 0.12098526954650879,
+      "time": 0.14567017555236816,
       "top_results": [
         "80/2021/NĐ-CP",
         "80/2021/NĐ-CP",
@@ -1027,55 +1171,63 @@
       ]
     },
     "hybrid": {
-      "time": 0.3320481777191162,
+      "time": 0.27687907218933105,
       "top_results": [
-        {
-          "doc_number": "06/2022/TT-BKHĐT",
-          "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
-          "article": "Điều 10",
-          "score": 0.015320910973084885
-        },
+        "06/2022/TT-BKHĐT",
+        "80/2021/NĐ-CP",
+        "80/2021/NĐ-CP"
+      ]
+    },
+    "rerank": {
+      "time": 2.074479579925537,
+      "top_results": [
         {
           "doc_number": "80/2021/NĐ-CP",
           "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
           "article": "Điều 13",
-          "score": 0.009836065573770491
+          "score": 0.9909844398498535
         },
         {
           "doc_number": "80/2021/NĐ-CP",
           "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
-          "article": "Điều 3",
-          "score": 0.00967741935483871
+          "article": "Điều 25",
+          "score": 0.9829357862472534
         },
         {
-          "doc_number": "80/2021/NĐ-CP",
-          "title": "hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
-          "article": "Điều 12",
-          "score": 0.009375
+          "doc_number": "06/2022/TT-BKHĐT",
+          "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
+          "article": "Điều 10",
+          "score": 0.9788914322853088
         },
         {
           "doc_number": "39/2018/NĐ-CP",
           "title": "về hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
           "article": "Điều 13",
-          "score": 0.00923076923076923
+          "score": 0.9766772985458374
+        },
+        {
+          "doc_number": "39/2018/NĐ-CP",
+          "title": "về hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 13",
+          "score": 0.973326563835144
         }
       ]
     },
-    "top_hybrid_doc": "06/2022/TT-BKHĐT (hướng dẫn Nghị định 80/2021/NĐ...)"
+    "top_hybrid_doc": "80/2021/NĐ-CP (hướng dẫn Luật Hỗ trợ doanh ng...)"
   },
   {
     "id": 20,
     "question": "Những hình thức doanh nghiệp nhỏ và vừa nào được lựa chọn để tham gia chuỗi giá trị sản xuất, chế biến?",
     "fts": {
-      "time": 0.3887064456939697,
+      "time": 0.5485312938690186,
       "top_results": [
         "06/2022/TT-BKHĐT",
-        "04/2017/QH14",
+        "17/2023/QH15",
         "04/2017/QH14"
       ]
     },
     "vector": {
-      "time": 0.15923428535461426,
+      "time": 0.16227293014526367,
       "top_results": [
         "06/2022/TT-BKHĐT",
         "06/2022/TT-BKHĐT",
@@ -1083,37 +1235,45 @@
       ]
     },
     "hybrid": {
-      "time": 0.5296850204467773,
+      "time": 0.6601443290710449,
+      "top_results": [
+        "06/2022/TT-BKHĐT",
+        "04/2017/QH14",
+        "06/2022/TT-BKHĐT"
+      ]
+    },
+    "rerank": {
+      "time": 1.2372541427612305,
       "top_results": [
         {
           "doc_number": "06/2022/TT-BKHĐT",
           "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
           "article": "Điều 17",
-          "score": 0.016393442622950817
+          "score": 0.9919290542602539
         },
         {
-          "doc_number": "04/2017/QH14",
-          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
-          "article": "Điều 19",
-          "score": 0.01572420634920635
+          "doc_number": "39/2018/NĐ-CP",
+          "title": "về hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+          "article": "Điều 23",
+          "score": 0.9774140119552612
         },
         {
           "doc_number": "06/2022/TT-BKHĐT",
           "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
-          "article": "Điều 17",
-          "score": 0.015474520804114072
+          "article": "Điều 16",
+          "score": 0.9720914959907532
         },
         {
-          "doc_number": "20/VBHN-VPQH",
-          "title": "Văn bản hợp nhất 20/VBHN-VPQH năm 2020 hợp nhất Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Văn phòng Quốc hội ban hành",
-          "article": "Điều 19",
-          "score": 0.015291375291375291
+          "doc_number": "06/2022/TT-BKHĐT",
+          "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
+          "article": "Điều 16",
+          "score": 0.9584887027740479
         },
         {
-          "doc_number": "04/2017/QH14",
-          "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa 2017",
-          "article": "Điều 19",
-          "score": 0.015275142314990511
+          "doc_number": "06/2022/TT-BKHĐT",
+          "title": "hướng dẫn Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa do Bộ trưởng Bộ Kế hoạch và Đầu tư ban hành",
+          "article": "Điều 16",
+          "score": 0.9575173854827881
         }
       ]
     },

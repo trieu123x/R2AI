@@ -32,8 +32,8 @@ def main():
     os.environ["HF_HUB_OFFLINE"] = "1"
     retriever = LocalRetriever()
     
-    # Warm up to load model and FAISS index
-    retriever.retrieve("warm up", mode="hybrid")
+    # Warm up to load model, FAISS index, and Reranker
+    retriever.retrieve("warm up", mode="hybrid", rerank=True)
     print(f"Initialization completed in {time.time() - t_start:.2f}s")
     
     results = []
@@ -59,10 +59,15 @@ def main():
         hyb_res = retriever.retrieve(query, mode="hybrid", top_k=5)
         hyb_time = time.time() - t0
         
+        # Test Hybrid + Rerank
+        t0 = time.time()
+        rerank_res = retriever.retrieve(query, mode="hybrid", top_k=5, rerank=True)
+        rerank_time = time.time() - t0
+        
         # Retrieve the best documents/articles information
         top_docs_list = []
         docs_seen = set()
-        for r in hyb_res:
+        for r in rerank_res:
             if r.doc_number not in docs_seen:
                 docs_seen.add(r.doc_number)
                 top_docs_list.append(f"{r.doc_number} ({r.title[:30]}...)")
@@ -82,40 +87,47 @@ def main():
             },
             "hybrid": {
                 "time": hyb_time,
+                "top_results": [r.doc_number for r in hyb_res[:3]]
+            },
+            "rerank": {
+                "time": rerank_time,
                 "top_results": [
                     {
                         "doc_number": r.doc_number,
                         "title": r.title,
                         "article": r.article_hint,
                         "score": r.score
-                    } for r in hyb_res
+                    } for r in rerank_res
                 ]
             },
             "top_hybrid_doc": top_doc
         })
         
     # Print Markdown Summary Table
-    print("\n" + "="*100)
+    print("\n" + "="*120)
     print("                                EVALUATION LATENCY & RESULT SUMMARY")
-    print("="*100)
-    print(f"| ID  | FTS (s)  | Vector (s) | Hybrid (s) | Best Matching Document |")
-    print(f"| :--- | :---: | :---: | :---: | :--- |")
+    print("="*120)
+    print(f"| ID  | FTS (s)  | Vector (s) | Hybrid (s) | Rerank (s) | Best Matching Document |")
+    print(f"| :--- | :---: | :---: | :---: | :---: | :--- |")
     for r in results:
         q_id = r["id"]
         fts_t = r["fts"]["time"]
         vec_t = r["vector"]["time"]
         hyb_t = r["hybrid"]["time"]
+        rerank_t = r["rerank"]["time"]
         top_res = r["top_hybrid_doc"]
-        print(f"| {q_id:02d}  | {fts_t:8.4f} | {vec_t:10.4f} | {hyb_t:10.4f} | {top_res} |")
-    print("="*100)
+        print(f"| {q_id:02d}  | {fts_t:8.4f} | {vec_t:10.4f} | {hyb_t:10.4f} | {rerank_t:10.4f} | {top_res} |")
+    print("="*120)
     
     # Calculate Averages
     avg_fts = sum(r["fts"]["time"] for r in results) / len(results)
     avg_vec = sum(r["vector"]["time"] for r in results) / len(results)
     avg_hyb = sum(r["hybrid"]["time"] for r in results) / len(results)
+    avg_rerank = sum(r["rerank"]["time"] for r in results) / len(results)
     print(f"Average FTS Latency   : {avg_fts:.4f}s")
     print(f"Average Vector Latency: {avg_vec:.4f}s")
     print(f"Average Hybrid Latency: {avg_hyb:.4f}s")
+    print(f"Average Rerank Latency: {avg_rerank:.4f}s")
     
     # Save detailed results to JSON
     output_path = os.path.join(PROJECT_ROOT, "retrieval", "stage1_eval_results.json")

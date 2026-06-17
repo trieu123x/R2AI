@@ -93,8 +93,8 @@ class LocalRetriever:
         self,
         db_path: str = LOCAL_DB_PATH,
         top_k: int = 10,
-        vector_weight: float = 0.6,
-        fts_weight: float = 0.4,
+        vector_weight: float = 0.5,
+        fts_weight: float = 0.5,
         rrf_k: int = 60,
     ):
         self.db_path = db_path
@@ -104,10 +104,7 @@ class LocalRetriever:
         self.rrf_k = rrf_k
         self._conn: Optional[sqlite3.Connection] = None
         self._model = None
-        
-        # GPT query enhancer
-        from retrieval.query_enhancer import GPTEnhancer
-        self.enhancer = GPTEnhancer()
+        self._reranker = None
 
     # ── Kết nối ─────────────────────────────────────────────────────────────────
 
@@ -180,33 +177,16 @@ class LocalRetriever:
 
     # ── FTS Search ──────────────────────────────────────────────────────────────
 
-    def fts_search(self, query: str, top_k: Optional[int] = None, gpt_mode: Optional[str] = None) -> List[RetrievalResult]:
+    def fts_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
         """
         FTS search với SQLite FTS5 BM25 native.
+        Sử dụng cấu trúc AND/OR thông minh dựa trên phân tích ngữ nghĩa để tránh gây nhiễu.
         Fallback sang LIKE search nếu FTS5 index chưa được tạo đúng.
-
-        QUAN TRỌNG: FTS5 sử dụng unicode61 tokenizer giữ nguyên dấu tiếng Việt.
-        Query cần nhập có dấu đầy đủ để match tốt nhất.
         """
         k = top_k or self.top_k
         
-        # GPT query expansion
-        search_query = query
-        if gpt_mode in ("expand", "hyde") and self.enhancer.is_active:
-            search_query = self.enhancer.expand_query(query)
-
         conn = self._get_conn()
         cur = conn.cursor()
-
-        VIETNAMESE_STOPWORDS = {
-            "và", "hoặc", "nhưng", "vì", "nên", "của", "các", "những", "là", "có", 
-            "trong", "tại", "để", "theo", "được", "bị", "cho", "ra", "vào", "lên", 
-            "xuống", "do", "từ", "đến", "bằng", "with", "với", "về", "như", "thì", 
-            "mà", "khi", "gì", "này", "đó", "kia", "nọ", "thế", "vậy", "người", 
-            "việc", "sự", "cuộc", "cái", "con", "chiếc", "nào", "ai", "đâu",
-            "công", "ty", "doanh", "nghiệp", "nhà", "nước", "hợp", "đồng", "nhân", 
-            "viên", "bản", "chính", "quy", "định", "pháp", "luật"
-        }
 
         # Helper function to execute two-step FTS search to avoid SQLite slow JOIN behavior
         def _execute_fts_query(match_expr: str, limit: int) -> List[RetrievalResult]:
@@ -257,41 +237,101 @@ class LocalRetriever:
                 return []
 
         if self._has_fts5_index():
-            # Sanitize search query
-            fts_query = re.sub(r'[^\w\s\u00C0-\u024F\u1E00-\u1EFF]', ' ', search_query)
-            fts_query = re.sub(r'\s+', ' ', fts_query).strip().lower()
-            if fts_query:
-                words = [w for w in fts_query.split() if len(w) >= 2]
-                keywords = [w for w in words if w not in VIETNAMESE_STOPWORDS]
-                if not keywords:
-                    keywords = words
+            # Xây dựng câu truy vấn FTS cấu trúc AND/OR
+            q_lower = query.lower()
+            
+            # Phân nhóm thực thể (Subjects) và Chủ đề/Hành động (Topics/Actions)
+            subjects = {
+                "incubator_coworking": {
+                    "keywords": ["ươm tạo", "làm việc chung"],
+                    "syns": ['"ươm tạo"', '"cơ sở ươm tạo"', '"khu làm việc chung"', '"làm việc chung"']
+                },
+                "sme": {
+                    "keywords": ["doanh nghiệp nhỏ và vừa", "nhỏ và vừa", "sme", "siêu nhỏ"],
+                    "syns": ['"doanh nghiệp nhỏ và vừa"', '"nhỏ và vừa"', '"doanh nghiệp nhỏ"', '"doanh nghiệp siêu nhỏ"']
+                },
+                "labor": {
+                    "keywords": ["nhân viên", "lao động", "người lao động", "thử việc", "ký hợp đồng", "sa thải", "đuổi việc", "nghỉ việc", "lương"],
+                    "syns": ['"người lao động"', '"lao động"', '"nhân viên"', '"hợp đồng lao động"']
+                }
+            }
+            
+            topics = {
+                "tax_land": {
+                    "keywords": ["thuế", "đất đai", "mặt bằng", "tiền thuê"],
+                    "syns": ['"thuế"', '"đất đai"', '"mặt bằng"', '"thuê đất"', '"ưu đãi thuế"', '"tiền sử dụng đất"']
+                },
+                "bidding": {
+                    "keywords": ["đấu thầu", "nhà thầu", "gói thầu"],
+                    "syns": ['"đấu thầu"', '"nhà thầu"', '"lựa chọn nhà thầu"', '"gói thầu"', '"xếp hạng hồ sơ"']
+                },
+                "degrees_holding": {
+                    "keywords": ["giữ", "bằng", "văn bằng", "chứng chỉ", "giấy tờ", "bằng cấp"],
+                    "syns": ['"giữ"', '"thu giữ"', '"tạm giữ"', '"văn bằng"', '"chứng chỉ"', '"giấy tờ tùy thân"', '"bản chính"', '"bằng cấp"']
+                }
+            }
 
-                results = []
-                if keywords:
-                    # 1. Try primary AND search of keywords
-                    and_expr = " AND ".join(keywords)
-                    results = _execute_fts_query(and_expr, k)
+            active_subjects = []
+            for s_name, s_info in subjects.items():
+                if any(kw in q_lower for kw in s_info["keywords"]):
+                    active_subjects.append(s_info["syns"])
                     
-                    # 2. Try fallback OR search of top 4 longest unique keywords if AND returned less than k results
-                    if len(results) < k:
-                        unique_keywords = sorted(list(set(keywords)), key=len, reverse=True)
-                        fallback_keywords = unique_keywords[:4]
-                        if fallback_keywords:
-                            or_expr = " OR ".join(fallback_keywords)
-                            fallback_results = _execute_fts_query(or_expr, k)
-                            existing_ids = {r.chunk_id for r in results}
-                            for r in fallback_results:
-                                if r.chunk_id not in existing_ids:
-                                    results.append(r)
+            active_topics = []
+            for t_name, t_info in topics.items():
+                if any(kw in q_lower for kw in t_info["keywords"]):
+                    active_topics.append(t_info["syns"])
+                    
+            clauses = []
+            if active_subjects:
+                flat_subjects = []
+                for s in active_subjects:
+                    flat_subjects.extend(s)
+                flat_subjects = list(dict.fromkeys(flat_subjects))
+                clauses.append("(" + " OR ".join(flat_subjects) + ")")
                 
+            if active_topics:
+                flat_topics = []
+                for t in active_topics:
+                    flat_topics.extend(t)
+                flat_topics = list(dict.fromkeys(flat_topics))
+                clauses.append("(" + " OR ".join(flat_topics) + ")")
+
+            fts_expr = ""
+            if clauses:
+                fts_expr = " AND ".join(clauses)
+                print(f"[local][FTS5] Structured query: {fts_expr}")
+                results = _execute_fts_query(fts_expr, k)
                 if results:
-                    return results[:k]
-                
-                print("[local][FTS5] 0 results from FTS5 (possibly missing diacritics). Trying LIKE fallback...")
+                    return results
+                print(f"[local][FTS5] Structured query returned 0 results. Trying fallback OR...")
+
+            # Fallback sang OR đơn giản của các từ khóa có nghĩa (loại bỏ stopword)
+            GRAMMAR_STOPWORDS = {
+                "và", "hoặc", "nhưng", "vì", "nên", "của", "các", "những", "là", "có", 
+                "trong", "tại", "để", "theo", "được", "bị", "cho", "ra", "vào", "lên", 
+                "xuống", "do", "từ", "đến", "bằng", "with", "với", "về", "như", "thì", 
+                "mà", "khi", "gì", "này", "đó", "kia", "nọ", "thế", "vậy", "nào", "ai", 
+                "đâu", "cái", "con", "chiếc", "nếu", "sẽ", "phải", "sao", "thế"
+            }
+            words = [w.lower().strip() for w in query.split()]
+            terms = []
+            for w in words:
+                w = re.sub(r'[^\w\s\u00C0-\u024F\u1E00-\u1EFF]', '', w).strip()
+                if w and len(w) >= 3 and w not in GRAMMAR_STOPWORDS:
+                    terms.append(f'"{w}"')
+            
+            if terms:
+                fallback_expr = " OR ".join(terms)
+                print(f"[local][FTS5] Fallback OR query: {fallback_expr}")
+                results = _execute_fts_query(fallback_expr, k)
+                if results:
+                    return results
+
+            print("[local][FTS5] 0 results from FTS5. Trying LIKE fallback...")
 
         # LIKE fallback search (slower, for queries without diacritics)
         print("[local][FTS] Using LIKE fallback search...")
-        keywords = [w for w in search_query.split() if len(w) >= 3][:5]
+        keywords = [w for w in query.split() if len(w) >= 3][:5]
         if not keywords:
             return []
 
@@ -377,18 +417,11 @@ class LocalRetriever:
                 
         return self._faiss_index
 
-    def vector_search(self, query: str, top_k: Optional[int] = None, gpt_mode: Optional[str] = None) -> List[RetrievalResult]:
+    def vector_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
         """Tìm kiếm tương đồng vector bằng FAISS index (tải và tìm cực nhanh)."""
         k = top_k or self.top_k
         
-        # GPT enhancement
-        search_query = query
-        if gpt_mode == "hyde" and self.enhancer.is_active:
-            search_query = self.enhancer.generate_hyde(query)
-        elif gpt_mode == "expand" and self.enhancer.is_active:
-            search_query = self.enhancer.expand_query(query)
-            
-        query_vec = self.embed_query(search_query)
+        query_vec = self.embed_query(query)
         query_norm = np.linalg.norm(query_vec)
         if query_norm == 0:
             return []
@@ -447,17 +480,13 @@ class LocalRetriever:
 
     # ── Hybrid (RRF) ────────────────────────────────────────────────────────────
 
-    def hybrid_search(self, query: str, top_k: Optional[int] = None, gpt_mode: Optional[str] = None) -> List[RetrievalResult]:
+    def hybrid_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
         """Kết hợp FTS + vector bằng Reciprocal Rank Fusion."""
         k = top_k or self.top_k
         fetch_k = k * 3
 
-        # For hybrid, vector uses the specified gpt_mode (e.g. HyDE), while FTS uses expand if GPT is active
-        vector_gpt_mode = gpt_mode
-        fts_gpt_mode = "expand" if gpt_mode else None
-
-        fts_results    = self.fts_search(query,    top_k=fetch_k, gpt_mode=fts_gpt_mode)
-        vector_results = self.vector_search(query, top_k=fetch_k, gpt_mode=vector_gpt_mode)
+        fts_results    = self.fts_search(query,    top_k=fetch_k)
+        vector_results = self.vector_search(query, top_k=fetch_k)
 
         chunk_map: dict = {}
         rrf_scores: dict = {}
@@ -491,6 +520,103 @@ class LocalRetriever:
             ))
         return results
 
+    def rerank(self, query: str, results: List[RetrievalResult], top_k: Optional[int] = None) -> List[RetrievalResult]:
+        if not results:
+            return []
+            
+        if self._reranker is None:
+            import torch
+            from sentence_transformers import CrossEncoder
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print(f"[local] Loading reranker model itdainb/PhoRanker on device '{device}'...", flush=True)
+            t0 = time.time()
+            self._reranker = CrossEncoder("itdainb/PhoRanker", device=device)
+            # Optimize memory if using CUDA
+            if device == "cuda" and hasattr(self._reranker.model, "half"):
+                self._reranker.model.half()
+            print(f"[local] Reranker model loaded in {time.time()-t0:.1f}s", flush=True)
+            
+        # Segment query using underthesea if available (PhoRanker needs it)
+        segmented_query = query
+        try:
+            import underthesea
+            segmented_query = underthesea.word_tokenize(query, format="text")
+        except Exception as e:
+            pass
+            
+        # Segment document content
+        conn = self._get_conn()
+        cur = conn.cursor()
+        chunk_ids = [r.chunk_id for r in results]
+        placeholders = ",".join("?" for _ in chunk_ids)
+        cur.execute(f"""
+            SELECT id, segmented_content
+            FROM document_chunks
+            WHERE id IN ({placeholders})
+        """, chunk_ids)
+        seg_rows = cur.fetchall()
+        seg_map = {row["id"]: row["segmented_content"] for row in seg_rows}
+        
+        pairs = []
+        for r in results:
+            doc_text = seg_map.get(r.chunk_id) or r.content
+            pairs.append([segmented_query, doc_text])
+            
+        t_rerank = time.time()
+        scores = self._reranker.predict(pairs, show_progress_bar=False)
+        print(f"[local] Reranking took {time.time() - t_rerank:.2f}s for {len(pairs)} pairs.")
+        
+        legal_bonus = {
+            "Luật": 0.15,
+            "Nghị định": 0.10,
+            "Thông tư": 0.00
+        }
+        
+        for r, score in zip(results, scores):
+            final_score = float(score)
+            bonus = legal_bonus.get(r.legal_type, 0.0)
+            r.score = final_score + bonus
+            r.source = f"rerank({r.source})"
+            
+        results.sort(key=lambda x: x.score, reverse=True)
+        
+        k = top_k or self.top_k
+        return results[:k]
+
+    def are_chunks_duplicate(self, c1: RetrievalResult, c2: RetrievalResult) -> bool:
+        """Kiểm tra xem hai chunk có trùng lặp nội dung đáng kể hay không."""
+        if c1.document_id == c2.document_id and c1.chunk_index == c2.chunk_index:
+            return True
+            
+        # Trích xuất phần nội dung thực tế để so sánh
+        body1 = c1.content.split("| Nội dung:")[-1].strip()
+        body2 = c2.content.split("| Nội dung:")[-1].strip()
+        
+        def normalize(text):
+            text = text.lower()
+            text = re.sub(r'[^\w\s]', '', text)
+            return set(text.split())
+            
+        words1 = normalize(body1)
+        words2 = normalize(body2)
+        if not words1 or not words2:
+            return False
+            
+        intersection = words1.intersection(words2)
+        union = words1.union(words2)
+        jaccard = len(intersection) / len(union)
+        
+        # Jaccard score cao => trùng lặp
+        if jaccard > 0.8:
+            return True
+            
+        # Nếu trùng Điều/Khoản luật và độ tương đồng tương đối cao => trùng lặp (ví dụ giữa Luật và VBHN)
+        if c1.article_hint and c2.article_hint and c1.article_hint == c2.article_hint:
+            if "điều" in c1.article_hint.lower() or "khoản" in c1.article_hint.lower():
+                if jaccard > 0.6:
+                    return True
+        return False
+
     # ── Entry point ─────────────────────────────────────────────────────────────
 
     def retrieve(
@@ -498,17 +624,44 @@ class LocalRetriever:
         query: str,
         mode: Literal["vector", "fts", "hybrid"] = "fts",
         top_k: Optional[int] = None,
-        gpt_mode: Optional[Literal["expand", "hyde"]] = None,
+        rerank: bool = False,
     ) -> List[RetrievalResult]:
         t0 = time.time()
-        if mode == "vector":
-            results = self.vector_search(query, top_k=top_k, gpt_mode=gpt_mode)
-        elif mode == "fts":
-            results = self.fts_search(query, top_k=top_k, gpt_mode=gpt_mode)
+        k = top_k or self.top_k
+        
+        # 1. Truy xuất danh sách ứng viên (candidate pool)
+        if rerank:
+            fetch_k = 20  # Lấy 20 candidates theo đúng pipeline tối ưu
         else:
-            results = self.hybrid_search(query, top_k=top_k, gpt_mode=gpt_mode)
+            fetch_k = max(30, k * 4)
+        
+        if mode == "vector":
+            results = self.vector_search(query, top_k=fetch_k)
+        elif mode == "fts":
+            results = self.fts_search(query, top_k=fetch_k)
+        else:
+            results = self.hybrid_search(query, top_k=fetch_k)
+            
+        # 2. Tiến hành lọc trùng lặp trước để loại bỏ nhiễu
+        unique_results = []
+        for r in results:
+            is_dup = False
+            for ur in unique_results:
+                if self.are_chunks_duplicate(r, ur):
+                     is_dup = True
+                     break
+            if not is_dup:
+                unique_results.append(r)
+                
+        # 3. Rerank và cắt kết quả theo cấu hình yêu cầu
+        if rerank:
+            # Rerank pool các tài liệu độc nhất và chọn ra top_k kết quả tốt nhất
+            results = self.rerank(query, unique_results, top_k=k)
+        else:
+            results = unique_results[:k]
+            
         elapsed = time.time() - t0
-        print(f"[local] mode={mode} | gpt_mode={gpt_mode} | {len(results)} results | {elapsed:.2f}s")
+        print(f"[local] mode={mode} | rerank={rerank} | {len(results)} results | {elapsed:.2f}s")
         return results
 
     @staticmethod

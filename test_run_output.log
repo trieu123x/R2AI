@@ -1,0 +1,45 @@
+STDOUT:
+[batch] 5 questions from test_questions.json
+[batch] Mode: hybrid | Top-K: 5 | Rerank: True | LLM: True
+------------------------------------------------------------
+[batch] Backend: LOCAL (SQLite)
+[local][FTS5] Structured query: ("ươm tạo" OR "cơ sở ươm tạo" OR "khu làm việc chung" OR "làm việc chung") AND ("thuế" OR "đất đai" OR "mặt bằng" OR "thuê đất" OR "ưu đãi thuế" OR "tiền sử dụng đất")
+[local] Loading bkai-bi-encoder on device 'cuda'...
+[local] Model loaded in 6.6s
+[local] Loading FAISS index from C:\Users\admin\Downloads\R2AI\database\local_chunks.index...
+[local] FAISS index loaded in 0.73s
+[local] Loading reranker model itdainb/PhoRanker on device 'cuda'...
+[local] Reranker model loaded in 2.0s
+[local] Reranking took 0.70s for 18 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 29.52s
+[generator] Đang load model 'Qwen/Qwen2.5-0.5B-Instruct' (Offline=True)...
+[generator] Thiết lập mô hình chạy trên dtype=torch.bfloat16...
+[generator] Model loaded in 2.3s
+  [  1/5] id=1 | 4 docs, 5 articles | LLM Answer: Yes | 77.74s
+[local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ") AND ("đấu thầu" OR "nhà thầu" OR "lựa chọn nhà thầu" OR "gói thầu" OR "xếp hạng hồ sơ")
+[local] Reranking took 0.30s for 17 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 0.80s
+  [  2/5] id=2 | 5 docs, 5 articles | LLM Answer: Yes | 21.02s
+[local][FTS5] Structured query: ("người lao động" OR "lao động" OR "nhân viên" OR "hợp đồng lao động") AND ("giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
+[local] Reranking took 0.40s for 15 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 1.60s
+  [  3/5] id=3 ⚠ Phát hiện lỗi sinh (dẫn chiếu sai các Điều không có trong context: {'20'}) lần 1. Đang sinh lại...
+  [  3/5] id=3 ⚠ Phát hiện lỗi sinh (dẫn chiếu sai các Điều không có trong context: {'20'}) lần 2. Đang sinh lại...
+  [  3/5] id=3 ⚠ Đã thử 2 lần vẫn lỗi. Fallback sang Rule-based.
+  [  3/5] id=3 | 4 docs, 5 articles | LLM Answer: Yes | 65.51s
+[local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ")
+[local] Reranking took 0.30s for 15 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 0.68s
+  [  4/5] id=4 | 2 docs, 3 articles | LLM Answer: Yes | 31.92s
+[local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ") AND ("thuế" OR "đất đai" OR "mặt bằng" OR "thuê đất" OR "ưu đãi thuế" OR "tiền sử dụng đất" OR "giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
+[local] Reranking took 0.28s for 16 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 0.75s
+  [  5/5] id=5 | 4 docs, 4 articles | LLM Answer: Yes | 19.14s
+------------------------------------------------------------
+[batch] ✓ Xong! 5 câu | avg 43.07s/câu
+[batch] ✓ Đã ghi → test_results.json
+
+Để nén và nộp bài:
+  Compress-Archive -Path test_results.json -DestinationPath submission.zip
+
+STDERR:
