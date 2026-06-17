@@ -1,7 +1,7 @@
 {
   "query": "Các cơ sở ươm tạo và khu làm việc chung được hưởng những chính sách hỗ trợ nào về thuế và đất đai?",
   "mode": "hybrid",
-  "top_k": 5,
+  "top_k": 10,
   "answer": "",
   "results": [
     {
@@ -73,6 +73,76 @@
       "content": "Văn bản: Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa (80/2021/NĐ-CP) | Điều 22. Nội dung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo (Phần 1) | Nội dung: Điều 22. Nội dung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo\n1. Hỗ trợ sử dụng cơ sở kỹ thuật, cơ sở ươm tạo, khu làm việc chung\na) Hỗ trợ 100% chi phí sử dụng trang thiết bị tại cơ sở kỹ thuật, cơ sở ươm tạo, khu làm việc chung nhưng không quá 20 triệu đồng/năm/doanh nghiệp;\nb) Hỗ trợ tối đa 50% chi phí thuê mặt bằng tại các cơ sở ươm tạo, khu làm việc chung nhưng không quá 5 triệu đồng/tháng/doanh nghiệp. Thời gian hỗ trợ tối đa là 03 năm kể từ ngày doanh nghiệp ký hợp đồng thuê mặt bằng.\n2. Hỗ trợ tư vấn sở hữu trí tuệ, khai thác và phát triển tài sản trí tuệ\na) Hỗ trợ 100% giá trị hợp đồng tư vấn về thủ tục xác lập, chuyển giao, khai thác và bảo vệ quyền sở hữu trí tuệ ở trong nước nhưng không quá 30 triệu đồng/hợp đồng/năm/doanh nghiệp;",
       "relevant_doc": "80/2021/NĐ-CP|Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
       "relevant_article": "80/2021/NĐ-CP|Nghị định 80/2021/NĐ-CP hướng dẫn Luật Hỗ trợ doanh nghiệp nhỏ và vừa|Điều 22"
+    },
+    {
+      "chunk_id": "460313_20",
+      "document_id": 460313,
+      "chunk_index": 20,
+      "doc_number": "07/2020/TT-BKHCN",
+      "title": "hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+      "legal_type": "Thông tư",
+      "score": 0.10504150390625,
+      "source": "rerank(hybrid)",
+      "article_hint": "Điều 10",
+      "content": "Văn bản: Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành (07/2020/TT-BKHCN) | Điều 10. Trách nhiệm của cơ quan quản lý về khoa học và công nghệ (Phần 2) | Nội dung: đ) Đề xuất biện pháp thúc đẩy phát triển cơ sở ươm tạo, cơ sở kỹ thuật, khu làm việc chung theo điều kiện thực tiễn trình cấp có thẩm quyền phê duyệt chương trình, kế hoạch hỗ trợ trong từng giai đoạn cụ thể.\n2. Cơ quan chuyên môn về khoa học và công nghệ trực thuộc Ủy ban nhân dân tỉnh, thành phố trực thuộc Trung ương có trách nhiệm:\na) Phổ biến thông tin về chính sách pháp luật cho các tổ chức, cá nhân thành lập cơ sở ươm tạo, cơ sở kỹ thuật, khu làm việc chung trên địa bàn tỉnh, thành phố theo quy định tại Thông tư này;\nb) Hỗ trợ cơ sở ươm tạo, cơ sở kỹ thuật, khu làm việc chung đáp ứng các điều kiện hưởng các chính sách ưu đãi theo quy định;",
+      "relevant_doc": "07/2020/TT-BKHCN|Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+      "relevant_article": "07/2020/TT-BKHCN|Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành|Điều 10"
+    },
+    {
+      "chunk_id": "460313_8",
+      "document_id": 460313,
+      "chunk_index": 8,
+      "doc_number": "07/2020/TT-BKHCN",
+      "title": "hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+      "legal_type": "Thông tư",
+      "score": 0.0740966796875,
+      "source": "rerank(hybrid)",
+      "article_hint": "Điều 5",
+      "content": "Văn bản: Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành (07/2020/TT-BKHCN) | Điều 5. Chức năng của cơ sở ươm tạo, cơ sở kỹ thuật, khu làm việc chung (Phần 1) | Nội dung: Điều 5. Chức năng của cơ sở ươm tạo, cơ sở kỹ thuật, khu làm việc chung\n1. Chức năng của cơ sở ươm tạo:\na) Hỗ trợ sử dụng máy móc, trang thiết bị, cơ sở vật chất kỹ thuật để hoàn thiện ý tưởng kinh doanh, hoàn thiện công nghệ;\nb) Cung cấp các dịch vụ hỗ trợ tư vấn và đào tạo bao gồm: công nghệ ươm tạo, sở hữu trí tuệ, pháp lý, tài chính, quản trị doanh nghiệp, kết nối đầu tư:\nc) Hỗ trợ tư vấn xây dựng phương án, mô hình kinh doanh;\nd) Cung cấp các nguồn lực cần thiết để hỗ trợ doanh nghiệp nhỏ và vừa phát triển trong giai đoạn đầu mới thành lập;\nđ) Có quy trình ươm tạo doanh nghiệp nhỏ và vừa.\n2. Chức năng của cơ sở kỹ thuật:\na) Hỗ trợ sử dụng các thiết bị dùng chung để hoàn thiện sản phẩm, hàng hóa, dịch vụ;",
+      "relevant_doc": "07/2020/TT-BKHCN|Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+      "relevant_article": "07/2020/TT-BKHCN|Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành|Điều 5"
+    },
+    {
+      "chunk_id": "460313_9",
+      "document_id": 460313,
+      "chunk_index": 9,
+      "doc_number": "07/2020/TT-BKHCN",
+      "title": "hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+      "legal_type": "Thông tư",
+      "score": 0.045013427734375,
+      "source": "rerank(hybrid)",
+      "article_hint": "Điều 5",
+      "content": "Văn bản: Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành (07/2020/TT-BKHCN) | Điều 5. Chức năng của cơ sở ươm tạo, cơ sở kỹ thuật, khu làm việc chung (Phần 2) | Nội dung: b) Hỗ trợ và cung cấp một hoặc nhiều dịch vụ theo chức năng, lĩnh vực gồm: dịch vụ thiết kế, kiểm định, hiệu chuẩn, thử nghiệm phương tiện đo, chuẩn đo lường; dịch vụ đánh giá, định giá và giám định công nghệ; dịch vụ thử nghiệm chất lượng sản phẩm, hàng hóa; dịch vụ kiểm định chất lượng sản phẩm, hàng hóa trong quá trình sử dụng; dịch vụ giám định chất lượng sản phẩm, hàng hóa; dịch vụ chứng nhận sản phẩm, hệ thống quản lý; dịch vụ công nhận tổ chức đánh giá sự phù hợp.\n3. Chức năng của khu làm việc chung:\na) Cung cấp không gian làm việc chung, không gian trưng bày sản phẩm, tiện ích văn phòng phục vụ cho hoạt động khởi nghiệp sáng tạo;\nb) Cung cấp các dịch vụ hỗ trợ tổ chức các sự kiện để kết nối đầu tư, khách hàng;",
+      "relevant_doc": "07/2020/TT-BKHCN|Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+      "relevant_article": "07/2020/TT-BKHCN|Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành|Điều 5"
+    },
+    {
+      "chunk_id": "460313_12",
+      "document_id": 460313,
+      "chunk_index": 12,
+      "doc_number": "07/2020/TT-BKHCN",
+      "title": "hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+      "legal_type": "Thông tư",
+      "score": 0.04132080078125,
+      "source": "rerank(hybrid)",
+      "article_hint": "Điều 6",
+      "content": "Văn bản: Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành (07/2020/TT-BKHCN) | Điều 6. Cơ cấu tổ chức bộ máy, hạ tầng cơ sở vật chất - kỹ thuật và nguồn lực tài chính đối với cơ sở ươm tạo (Phần 2) | Nội dung: a) Trụ sở và mặt bằng được sử dụng hợp pháp bảo đảm thiết lập không gian làm việc cho các đối tượng được ươm tạo, bố trí phòng họp và các phòng chức năng;\nb) Bảo đảm điện tích đủ cung cấp cho các dự án ươm tạo;\nc) Phòng thí nghiệm hoặc khu sản xuất thử nghiệm bảo đảm máy móc, trang thiết bị cần thiết cho hoạt động ươm tạo;\nd) Phòng họp hoặc hội trường được trang bị đầy đủ các thiết bị phù hợp sử dụng tổ chức các hội thảo, hội nghị trong nước và quốc tế, cũng như sử dụng làm phòng họp, làm việc nhóm;\nd) Xây dựng cơ sở dữ liệu hoặc có quyền sử dụng, khai thác cơ sở dữ liệu về công nghệ, chuyên gia công nghệ, chuyên gia tư vấn liên quan đến các hoạt động ươm tạo.",
+      "relevant_doc": "07/2020/TT-BKHCN|Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+      "relevant_article": "07/2020/TT-BKHCN|Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành|Điều 6"
+    },
+    {
+      "chunk_id": "460313_27",
+      "document_id": 460313,
+      "chunk_index": 27,
+      "doc_number": "07/2020/TT-BKHCN",
+      "title": "hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+      "legal_type": "Thông tư",
+      "score": 0.0323486328125,
+      "source": "rerank(hybrid)",
+      "article_hint": "Điều 12",
+      "content": "Văn bản: Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành (07/2020/TT-BKHCN) | Điều 12. Điều khoản thi hành (Phần 5) | Nội dung: | Tên cơ quan ươm tạo, cơ sở kỹ thuật, khu làm việc chung | Tên cơ quan chủ quản (nếu có) | Hình thức pháp lý của tổ chức (Công lập/ ngoài công lập/ công tư) | Tình trạng (đang hoạt động/ ngừng hoạt động/ giải thể) | Lĩnh vực hoạt động | Thời gian thành lập | Tổng số lao động (người) | Thu nhập bình quân đầu người (triệu đồng) | Số kinh phí hỗ trợ DNNVV, DNNVV KNST (triệu đồng) | Số lượng DNNVV, DNNVV KNST được hỗ trợ | Tổng doanh thu (triệu đồng) | Tổng lợi nhuận trước thuế (triệu đồng) | Thuế thu nhập doanh nghiệp được miễn, giảm (triệu đồng) | Tiền thuê đất được miễn, giảm (triệu đồng) | Vay vốn tín dụng ưu đãi 3 (triệu đồng) | Thực hiện nhiệm vụ KH&CN, dự án hỗ trợ của nhà nước (triệu đồng) | Các ưu đãi hỗ trợ khác |\n||||||||||||||||||\n| 1…. | | | | | | | | | | | | | | | | |",
+      "relevant_doc": "07/2020/TT-BKHCN|Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành",
+      "relevant_article": "07/2020/TT-BKHCN|Thông tư 07/2020/TT-BKHCN hướng dẫn về việc thành lập cơ sở ươm tạo doanh nghiệp nhỏ và vừa, cơ sở kỹ thuật hỗ trợ doanh nghiệp nhỏ và vừa, khu làm việc chung hỗ trợ doanh nghiệp nhỏ và vừa khởi nghiệp sáng tạo do Bộ trưởng Bộ Khoa học và Công nghệ ban hành|Điều 12"
     }
   ]
 }

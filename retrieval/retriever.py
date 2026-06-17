@@ -365,9 +365,9 @@ class LegalRetriever:
         print(f"[retriever] Reranking took {time.time() - t_rerank:.2f}s for {len(pairs)} pairs.")
         
         legal_bonus = {
-            "Luật": 0.15,
-            "Nghị định": 0.10,
-            "Thông tư": 0.00
+            "Luật": 0.3,
+            "Nghị định": 0.2,
+            "Thông tư": 0.1
         }
         
         for r, score in zip(results, scores):
@@ -379,7 +379,17 @@ class LegalRetriever:
         results.sort(key=lambda x: x.score, reverse=True)
         
         k = top_k or self.top_k
-        return results[:k]
+        
+        # Lọc max 2 chunk mỗi document
+        filtered_results = []
+        doc_count = {}
+        for r in results:
+            doc_id = r.document_id
+            if doc_count.get(doc_id, 0) < 2:
+                filtered_results.append(r)
+                doc_count[doc_id] = doc_count.get(doc_id, 0) + 1
+        
+        return filtered_results[:k]
 
     def retrieve(
         self,
