@@ -40,7 +40,7 @@ def _sanitize_query(q: str) -> str:
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from retrieval.retriever import LegalRetriever, RetrievalResult
+from retrieval.local_retriever import LocalRetriever, RetrievalResult
 
 
 # ─── ANSI Colors ───────────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ def print_result(idx: int, r: RetrievalResult, show_content: bool = True, max_ch
 
 def print_submission_format(results: list[RetrievalResult]):
     """In ra định dạng relevant_docs và relevant_articles cho bài nộp."""
-    retriever = LegalRetriever.__new__(LegalRetriever)  # chỉ dùng static method
+    retriever = LocalRetriever.__new__(LocalRetriever)  # chỉ dùng static method
     docs_seen = set()
     articles_seen = set()
     relevant_docs = []
@@ -131,7 +131,7 @@ def print_submission_format(results: list[RetrievalResult]):
     print(hr('='))
 
 
-def print_document_summary(retriever: LegalRetriever, results: list[RetrievalResult]):
+def print_document_summary(retriever: LocalRetriever, results: list[RetrievalResult]):
     """Tóm tắt kết quả theo văn bản pháp lý."""
     docs = retriever.aggregate_by_document(results)
     sorted_docs = sorted(docs.items(), key=lambda x: -x[1]["max_score"])
@@ -151,7 +151,7 @@ def print_document_summary(retriever: LegalRetriever, results: list[RetrievalRes
 
 # ─── Benchmark ────────────────────────────────────────────────────────────────
 
-def run_benchmark(retriever: LegalRetriever, query: str, top_k: int):
+def run_benchmark(retriever: LocalRetriever, query: str, top_k: int):
     print(f"\n{hr('=')}")
     print(colorize("  [BENCHMARK SO SANH 3 MODE]", C.BOLD + C.YELLOW))
     print(hr('='))
@@ -172,39 +172,14 @@ def run_benchmark(retriever: LegalRetriever, query: str, top_k: int):
 # ─── Main interactive loop ─────────────────────────────────────────────────────
 
 def run_interactive(args):
-    # Chọn retriever: local SQLite hoặc Supabase
-    if getattr(args, "local", False):
-        from retrieval.local_retriever import LocalRetriever
-        retriever = LocalRetriever(
-            top_k=args.top_k,
-            vector_weight=args.vector_weight,
-            fts_weight=args.fts_weight,
-            rrf_k=args.rrf_k,
-        )
-        backend = "LOCAL (SQLite)"
-    else:
-        # Thử kết nối Supabase, nếu lỗi fallback local
-        try:
-            retriever = LegalRetriever(
-                top_k=args.top_k,
-                vector_weight=args.vector_weight,
-                fts_weight=args.fts_weight,
-                rrf_k=args.rrf_k,
-            )
-            # Kiểm tra kết nối
-            retriever._get_conn()
-            backend = "SUPABASE (PostgreSQL)"
-        except Exception as e:
-            print(colorize(f"  [!] Supabase khong ket noi duoc: {e}", C.YELLOW))
-            print(colorize("  [->] Tu dong chuyen sang LOCAL SQLite mode...", C.CYAN))
-            from retrieval.local_retriever import LocalRetriever
-            retriever = LocalRetriever(
-                top_k=args.top_k,
-                vector_weight=args.vector_weight,
-                fts_weight=args.fts_weight,
-                rrf_k=args.rrf_k,
-            )
-            backend = "LOCAL (SQLite - fallback)"
+    from retrieval.local_retriever import LocalRetriever
+    retriever = LocalRetriever(
+        top_k=args.top_k,
+        vector_weight=args.vector_weight,
+        fts_weight=args.fts_weight,
+        rrf_k=args.rrf_k,
+    )
+    backend = "LOCAL (SQLite)"
 
     # Khởi tạo Generator nếu chọn sinh câu trả lời
     generator = None

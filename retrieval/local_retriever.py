@@ -566,24 +566,41 @@ class LocalRetriever:
         scores = self._reranker.predict(pairs, show_progress_bar=False)
         print(f"[local] Reranking took {time.time() - t_rerank:.2f}s for {len(pairs)} pairs.")
         
-        legal_bonus = {
-            "Luật": 0.15,
-            "Nghị định": 0.10,
-            "Thông tư": 0.00
+        LEGAL_WEIGHT = {
+            "Luật": 1.0,
+            "Bộ luật": 1.0,
+            "Nghị quyết": 0.95,
+            "Nghị định": 0.85,
+            "Thông tư": 0.75,
         }
         
         for r, score in zip(results, scores):
-            final_score = float(score)
-            bonus = legal_bonus.get(r.legal_type, 0.0)
-            if r.article_hint and "Điều" in r.article_hint:
-                bonus += 0.1
-            r.score = final_score + bonus
+            rerank_score = float(score)
+            # Normalize PhoRanker output to positive if it outputs logits
+            if rerank_score < 0 or rerank_score > 1.0:
+                import math
+                rerank_score = 1 / (1 + math.exp(-max(min(rerank_score, 100), -100)))
+                
+            weight = LEGAL_WEIGHT.get(r.legal_type, 0.7)
+            final_score = rerank_score * weight
+            
+            r.score = final_score
             r.source = f"rerank({r.source})"
             
         results.sort(key=lambda x: x.score, reverse=True)
         
-        k = top_k or self.top_k
-        return results[:k]
+        # Lọc MMR Diversity: max 2 chunk mỗi document
+        filtered_results = []
+        doc_count = {}
+        for r in results:
+            doc_id = r.document_id
+            if doc_count.get(doc_id, 0) < 2:
+                filtered_results.append(r)
+                doc_count[doc_id] = doc_count.get(doc_id, 0) + 1
+        
+        if top_k:
+            return filtered_results[:top_k]
+        return filtered_results
 
     def are_chunks_duplicate(self, c1: RetrievalResult, c2: RetrievalResult) -> bool:
         """Kiểm tra xem hai chunk có trùng lặp nội dung đáng kể hay không."""
@@ -687,12 +704,35 @@ class LocalRetriever:
                 )
                 article_results.append(new_res)
                 
-        # 3. Rerank và cắt kết quả theo cấu hình yêu cầu
+        # 3. Rerank và lọc
         if rerank:
-            results = self.rerank(query, article_results, top_k=k)
+            results = self.rerank(query, article_results, top_k=None)
         else:
             article_results.sort(key=lambda x: x.score, reverse=True)
-            results = article_results[:k]
+            results = article_results
+
+        # Query-aware Filter
+        try:
+            import underthesea
+            tags = underthesea.pos_tag(query)
+            important_terms = [word.lower() for word, tag in tags if tag in ['N', 'Np', 'V', 'A', 'M'] and len(word) > 1]
+            if not important_terms:
+                important_terms = [w.lower() for w in query.split() if len(w) > 2]
+        except Exception:
+            important_terms = [w.lower() for w in query.split() if len(w) > 2]
+            
+        filtered_final = []
+        for r in results:
+            content_lower = r.content.lower()
+            # Chunk phải chứa ít nhất một term quan trọng từ câu hỏi
+            if any(term in content_lower for term in important_terms):
+                filtered_final.append(r)
+                
+        # Fallback nếu filter drop hết tất cả kết quả
+        if not filtered_final and results:
+            filtered_final = results
+            
+        results = filtered_final[:k]
             
         elapsed = time.time() - t0
         print(f"[local] mode={mode} | rerank={rerank} | {len(results)} results | {elapsed:.2f}s")
