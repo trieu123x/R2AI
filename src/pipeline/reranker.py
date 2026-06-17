@@ -54,12 +54,32 @@ class PipelineReranker:
         scores = self._reranker.predict(pairs, show_progress_bar=False)
         print(f"[pipeline] Reranked {len(pairs)} pairs in {time.time() - t_rerank:.2f}s.")
 
+        LEGAL_BOOST = {
+            "Luật": 0.3,
+            "Nghị định": 0.2,
+            "Thông tư": 0.1
+        }
+
         for r, score in zip(results, scores):
-            r.score = float(score)
+            final_score = float(score)
+            # Thêm điểm thưởng dựa trên loại văn bản pháp lý
+            bonus = LEGAL_BOOST.get(r.legal_type, 0.0)
+            if r.article_hint and "Điều" in r.article_hint:
+                bonus += 0.1
+            r.score = final_score + bonus
             r.source = f"rerank({r.source})"
 
         # Sort descending
         results.sort(key=lambda x: x.score, reverse=True)
 
+        # Lọc max 2 chunk mỗi document
+        filtered_results = []
+        doc_count = {}
+        for r in results:
+            doc_id = r.document_id
+            if doc_count.get(doc_id, 0) < 2:
+                filtered_results.append(r)
+                doc_count[doc_id] = doc_count.get(doc_id, 0) + 1
+
         # Step 6: Top 5
-        return results[:self.top_n]
+        return filtered_results[:self.top_n]

@@ -214,7 +214,7 @@ def run_interactive(args):
 
     print_header()
     print(colorize(f"  Backend: {backend}", C.GREEN))
-    print(colorize(f"  Mode: {args.mode.upper()}  |  Top-K: {args.top_k}  |  Rerank: {str(getattr(args, 'rerank', False)).upper()}  |  LLM: {str(getattr(args, 'llm', False)).upper()}", C.CYAN))
+    print(colorize(f"  Mode: {args.mode.upper()}  |  Top-K: {args.top_k}  |  Rerank: {str(getattr(args, 'rerank', True)).upper()}  |  LLM: {str(getattr(args, 'llm', False)).upper()}", C.CYAN))
     if getattr(args, 'llm', False):
         print(colorize(f"  LLM Model: {args.llm_model}", C.YELLOW))
     print(colorize(f"  Vector weight: {args.vector_weight}  |  FTS weight: {args.fts_weight}  |  RRF-k: {args.rrf_k}", C.GRAY))
@@ -311,11 +311,11 @@ def run_interactive(args):
 
         # ── Tìm kiếm ──
         print(f"\n{hr()}")
-        print(colorize(f"  [TIM KIEM] \"{query}\"  [mode={mode}, top_k={top_k}, rerank={getattr(args, 'rerank', False)}]", C.CYAN))
+        print(colorize(f"  [TIM KIEM] \"{query}\"  [mode={mode}, top_k={top_k}, rerank={getattr(args, 'rerank', True)}]", C.CYAN))
         print(hr())
 
         try:
-            results = retriever.retrieve(query, mode=mode, top_k=top_k, rerank=getattr(args, "rerank", False))
+            results = retriever.retrieve(query, mode=mode, top_k=top_k, rerank=getattr(args, "rerank", True))
         except Exception as e:
             print(colorize(f"  ✗ LỖI: {e}", C.RED))
             if not interactive:
@@ -423,8 +423,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--export", type=str, default=None,
                    help="Export ket qua ra file JSON")
 
-    p.add_argument("--rerank", "-r", action="store_true",
-                   help="Sử dụng reranker model PhoRanker để tối ưu thứ tự kết quả")
+    p.add_argument("--rerank", "-r", action="store_true", default=True,
+                   help="Sử dụng reranker model PhoRanker để tối ưu thứ tự kết quả (mặc định: BẬT)")
+    p.add_argument("--no-rerank", dest="rerank", action="store_false",
+                   help="Tắt reranker model PhoRanker")
     p.add_argument("--llm", action="store_true",
                    help="Kích hoạt mô hình sinh câu trả lời bằng LLM local")
     p.add_argument("--llm-model", default="Qwen/Qwen2.5-0.5B-Instruct",

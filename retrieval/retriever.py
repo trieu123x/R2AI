@@ -373,6 +373,8 @@ class LegalRetriever:
         for r, score in zip(results, scores):
             final_score = float(score)
             bonus = legal_bonus.get(r.legal_type, 0.0)
+            if r.article_hint and "Điều" in r.article_hint:
+                bonus += 0.1
             r.score = final_score + bonus
             r.source = f"rerank({r.source})"
             
@@ -396,7 +398,7 @@ class LegalRetriever:
         query: str,
         mode: Literal["vector", "fts", "hybrid"] = "hybrid",
         top_k: Optional[int] = None,
-        rerank: bool = False,
+        rerank: bool = True,
     ) -> List[RetrievalResult]:
         """
         Truy xuất kết quả theo mode.
@@ -411,9 +413,9 @@ class LegalRetriever:
         k = top_k or self.top_k
         
         if rerank:
-            fetch_k = 20
+            fetch_k = 50
         else:
-            fetch_k = max(30, k * 4)
+            fetch_k = max(50, k * 4)
         
         if mode == "vector":
             results = self.vector_search(query, top_k=fetch_k)
@@ -433,10 +435,43 @@ class LegalRetriever:
             if not is_dup:
                 unique_results.append(r)
                 
+        # Aggregate chunks into articles
+        grouped = {}
+        for r in unique_results:
+            key = (r.document_id, r.article_hint)
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(r)
+            
+        article_results = []
+        for key, chunks in grouped.items():
+            chunks.sort(key=lambda x: x.chunk_index)
+            base_chunk = chunks[0]
+            if len(chunks) == 1 or not base_chunk.article_hint:
+                article_results.append(base_chunk)
+            else:
+                combined_content = "\n...\n".join([c.content for c in chunks])
+                max_score = max([c.score for c in chunks])
+                
+                new_res = RetrievalResult(
+                    chunk_id=base_chunk.chunk_id,
+                    document_id=base_chunk.document_id,
+                    chunk_index=base_chunk.chunk_index,
+                    content=combined_content,
+                    doc_number=base_chunk.doc_number,
+                    title=base_chunk.title,
+                    legal_type=base_chunk.legal_type,
+                    score=max_score,
+                    source=base_chunk.source + "_aggregated",
+                    article_hint=base_chunk.article_hint,
+                )
+                article_results.append(new_res)
+                
         if rerank:
-            results = self.rerank(query, unique_results, top_k=k)
+            results = self.rerank(query, article_results, top_k=k)
         else:
-            results = unique_results[:k]
+            article_results.sort(key=lambda x: x.score, reverse=True)
+            results = article_results[:k]
 
         elapsed = time.time() - t0
         print(f"[retriever] mode={mode} | rerank={rerank} | {len(results)} kết quả | {elapsed:.2f}s")

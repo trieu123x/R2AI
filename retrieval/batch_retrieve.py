@@ -179,8 +179,10 @@ def main():
     parser.add_argument("--rrf-k", type=int, default=60)
     parser.add_argument("--local", "-l", action="store_true",
                         help="Dung local SQLite thay vi Supabase (offline mode)")
-    parser.add_argument("--rerank", "-r", action="store_true",
-                        help="Kích hoạt Reranker PhoRanker để tăng độ chính xác tìm kiếm")
+    parser.add_argument("--rerank", "-r", action="store_true", default=True,
+                        help="Kích hoạt Reranker PhoRanker để tăng độ chính xác tìm kiếm (mặc định: BẬT)")
+    parser.add_argument("--no-rerank", dest="rerank", action="store_false",
+                        help="Tắt Reranker PhoRanker")
     parser.add_argument("--llm", action="store_true",
                         help="Kích hoạt mô hình sinh câu trả lời tự động")
     parser.add_argument("--llm-model", default="Qwen/Qwen3-8B-Instruct",

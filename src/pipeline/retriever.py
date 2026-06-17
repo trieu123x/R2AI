@@ -15,7 +15,7 @@ class PipelineRetriever:
     Step 3: BM25 (top 10) + Embedding (top 10)
     Step 4: Merge
     """
-    def __init__(self, db_path=None, top_k_each=10):
+    def __init__(self, db_path=None, top_k_each=50):
         if db_path:
             self.retriever = LocalRetriever(db_path=db_path)
         else:
@@ -77,4 +77,37 @@ class PipelineRetriever:
             if not is_dup:
                 unique_results.append(r)
 
-        return unique_results
+        # Gộp chunk thành Article
+        grouped = {}
+        for r in unique_results:
+            key = (r.document_id, r.article_hint)
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(r)
+            
+        article_results = []
+        for key, chunks in grouped.items():
+            chunks.sort(key=lambda x: x.chunk_index)
+            base_chunk = chunks[0]
+            if len(chunks) == 1 or not base_chunk.article_hint:
+                article_results.append(base_chunk)
+            else:
+                combined_content = "\n...\n".join([c.content for c in chunks])
+                max_score = max([c.score for c in chunks])
+                
+                new_res = RetrievalResult(
+                    chunk_id=base_chunk.chunk_id,
+                    document_id=base_chunk.document_id,
+                    chunk_index=base_chunk.chunk_index,
+                    content=combined_content,
+                    doc_number=base_chunk.doc_number,
+                    title=base_chunk.title,
+                    legal_type=base_chunk.legal_type,
+                    score=max_score,
+                    source=base_chunk.source + "_aggregated",
+                    article_hint=base_chunk.article_hint,
+                )
+                article_results.append(new_res)
+                
+        article_results.sort(key=lambda x: x.score, reverse=True)
+        return article_results
