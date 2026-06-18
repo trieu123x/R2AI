@@ -28,7 +28,7 @@ def main():
     print("[test_pipeline] Initializing LegalRAGPipeline...")
     pipeline = LegalRAGPipeline(
         use_llm_rewrite=False,
-        llm_model_name="Qwen/Qwen2.5-0.5B-Instruct"
+        llm_model_name="Qwen/Qwen2.5-1.5B-Instruct"
     )
 
     results = []
