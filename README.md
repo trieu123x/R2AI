@@ -43,13 +43,38 @@ R2AI/
 
 ## ⚙️ Cài đặt môi trường
 
-### 1. Cài Python packages
+### 1. Tạo và kích hoạt môi trường ảo (.venv)
+
+Nên đặt tên thư mục môi trường ảo là `.venv` (tránh đặt tên trùng với file `.env` cấu hình để không bị ghi đè/nhầm lẫn).
+
+* **Bước A: Tạo môi trường ảo**
+  ```bash
+  python -m venv .venv
+  ```
+
+* **Bước B: Kích hoạt môi trường ảo**
+  * **Dành cho Command Prompt (CMD):**
+    ```cmd
+    .venv\Scripts\activate.bat
+    ```
+  * **Dành cho PowerShell:**
+    ```powershell
+    .venv\Scripts\Activate.ps1
+    ```
+    *Lưu ý:* Nếu gặp lỗi bảo mật (Execution Policy) trên PowerShell, chạy lệnh sau trước khi kích hoạt:
+    ```powershell
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+    ```
+
+### 2. Cài đặt các thư viện (Python packages)
+
+Sau khi đã kích hoạt môi trường ảo (bạn sẽ thấy `(.venv)` xuất hiện ở đầu dòng lệnh), tiến hành cài đặt các package:
 
 ```bash
 pip install sentence-transformers pandas pyarrow psycopg2-binary python-dotenv numpy pyvi faiss-cpu
 ```
 
-### 2. Cấu hình `.env`
+### 3. Cấu hình `.env`
 
 Tạo file `.env` tại root (đã có sẵn, chỉ cần cập nhật nếu đổi project Supabase):
 

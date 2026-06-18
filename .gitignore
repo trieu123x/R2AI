@@ -1,5 +1,7 @@
 # Ignored files and folders
 .env
+.venv/
+venv/
 __pycache__/
 *.pyc
 *.pyo
