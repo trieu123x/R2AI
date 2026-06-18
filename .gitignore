@@ -12,3 +12,8 @@ __pycache__/
 database/*.db
 database/local_chunks.db
 database/*.index
+
+# BAAI models
+retrieval/bge-reranker-*/
+src/retrieval/bge-reranker-*/
+BAAI/

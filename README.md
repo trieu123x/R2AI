@@ -69,14 +69,25 @@ Nên đặt tên thư mục môi trường ảo là `.venv` (tránh đặt tên 
 ### 2. Cài đặt các thư viện (Python packages)
 
 Sau khi đã kích hoạt môi trường ảo (bạn sẽ thấy `(.venv)` xuất hiện ở đầu dòng lệnh), tiến hành cài đặt các package:
+Hệ thống RAG (Retrieval-Augmented Generation) chuyên sâu dành cho văn bản pháp lý tiếng Việt. Hệ thống được thiết kế để chống lại các lỗi rủi ro của AI (hallucination) nhờ cơ chế kiểm duyệt chặt chẽ, kết hợp tìm kiếm đa mô thức (Hybrid Search: BM25 + Vector) và chấm điểm lại (Reranking).
+
+---
+
+## ⚙️ Hướng dẫn cài đặt môi trường
+
+### 1. Cài đặt Python packages
+Yêu cầu Python 3.8 trở lên. Cài đặt các thư viện cần thiết bằng lệnh:
 
 ```bash
-pip install sentence-transformers pandas pyarrow psycopg2-binary python-dotenv numpy pyvi faiss-cpu
+pip install -r requirements.txt
 ```
+*(Hoặc cài thủ công: `pip install sentence-transformers pandas pyarrow psycopg2-binary python-dotenv numpy pyvi faiss-cpu torch transformers accelerate`)*
 
 ### 3. Cấu hình `.env`
 
 Tạo file `.env` tại root (đã có sẵn, chỉ cần cập nhật nếu đổi project Supabase):
+### 2. Cấu hình biến môi trường (`.env`)
+Tạo file `.env` tại thư mục gốc (nếu dùng cơ sở dữ liệu Supabase online). Nếu chỉ chạy local SQLite thì không bắt buộc, nhưng khuyến nghị:
 
 ```env
 SUPABASE_URL=https://<project>.supabase.co
@@ -87,162 +98,76 @@ DATABASE_URL=postgresql://postgres.<project>:<password>@<host>:5432/postgres
 
 ---
 
-## 🚀 Hướng dẫn chạy theo thứ tự
+## 🚀 Hướng dẫn tiền xử lý dữ liệu (Data Pipeline)
 
-### BƯỚC 1 — Kiểm tra chất lượng chunking (tuỳ chọn)
+Trước khi hệ thống có thể trả lời câu hỏi, bạn cần xử lý dữ liệu thô và xây dựng Database tìm kiếm:
 
-> Chạy trên ~5 văn bản mẫu, không ghi vào DB. Dùng để kiểm tra logic chunker trước.
-
-```bash
-python src/test_chunking.py
-```
-
-- **Input**: `vietnamese-legal-documents/metadata/` và `content/` (parquet files)
-- **Output**: In ra console + `logs/chunk_test_report.txt`
-
----
-
-### BƯỚC 2 — Chunking toàn bộ dữ liệu vào SQLite
-
-> Lọc văn bản pháp lý liên quan (doanh nghiệp, thuế, lao động...), chunk theo điều khoản, lưu vào `database/local_chunks.db`.
-
+**Bước 1: Lọc, Chunking và lưu vào SQLite cục bộ**
+Chạy lệnh dưới đây để cắt văn bản pháp lý thành các đoạn nhỏ (chunk) theo từng Điều khoản:
 ```bash
 python src/process_chunks.py
 ```
+*(Kết quả tạo ra `database/local_chunks.db` chứa dữ liệu văn bản)*
 
-- **Input**: `vietnamese-legal-documents/` (parquet)
-- **Output**: `database/local_chunks.db` (~3GB, có ~392,704 chunks)
-- **Thời gian**: ~10–20 phút tuỳ máy
-
----
-
-### BƯỚC 3 — Thiết lập FTS5 cho SQLite (offline search)
-
-> Tạo virtual table FTS5 trong SQLite để hỗ trợ full-text search bằng BM25.
-
+**Bước 2: Thiết lập Full-Text Search (FTS5)**
+Tạo bảng tìm kiếm từ khóa ảo (Virtual Table) bên trong SQLite:
 ```bash
 python retrieval/setup_fts5.py
 ```
 
-- **Input**: `database/local_chunks.db` (từ Bước 2)
-- **Output**: FTS5 table `chunks_fts` được tạo trong cùng file DB
-
----
-
-### BƯỚC 4 — Sinh embeddings (vector) cho toàn bộ chunks
-
-> Dùng model `bkai-foundation-models/vietnamese-bi-encoder` để sinh embeddings.  
-> Hỗ trợ resume (tiếp tục nếu bị ngắt).
-
+**Bước 3: Sinh Vector Embeddings**
+Mã hóa văn bản thành Vector ngữ nghĩa (có thể mất nhiều giờ nếu chạy CPU):
 ```bash
 python database/generate_local_embeddings_mp.py
 ```
 
-- **Input**: `database/local_chunks.db`
-- **Output**: Cột `embedding` được điền vào các rows trong `document_chunks`
-- **Thời gian**: Rất lâu trên CPU (~vài giờ). Chạy qua đêm nếu cần.
-
 ---
 
-### BƯỚC 5 — Upload lên Supabase (online mode, tuỳ chọn)
+## 🧠 Hướng dẫn Chạy & Kiểm thử Hệ thống (RAG Pipeline)
 
-> Upload toàn bộ chunks + embeddings từ SQLite lên Supabase PostgreSQL (cần internet).
+### 1. Kiểm thử tìm kiếm cơ bản (Chưa dùng LLM)
+Sử dụng CLI tương tác để kiểm tra xem hệ thống có tìm đúng tài liệu hay không (Offline mode):
 
 ```bash
-python database/push_chunks_to_supabase.py
+python retrieval/test_retrieval.py --local --mode hybrid --query "Điều kiện thành lập doanh nghiệp" --top-k 5
 ```
+Các tham số:
+- `--mode`: Chọn `fts` (Từ khóa), `vector` (Ngữ nghĩa) hoặc `hybrid` (Kết hợp cả hai).
+- `--benchmark`: Thêm flag này để đánh giá tốc độ giữa các phương pháp.
 
-- **Input**: `database/local_chunks.db` + kết nối Supabase qua `.env`
-- **Output**: Dữ liệu đồng bộ lên Supabase (bảng `documents` + `document_chunks`)
-- **Lưu ý**: Đảm bảo đã chạy Bước 3 và 4 trước để có FTS5 + embeddings
-
----
-
-### BƯỚC 6 — Kiểm tra retrieval pipeline
-
-> CLI tương tác để test tìm kiếm mà không cần LLM.
-
-**Chế độ offline (SQLite):**
+### 2. Kiểm thử luồng End-to-End (RAG: Tìm kiếm + AI sinh câu trả lời)
+Chạy script test cục bộ với 5 câu hỏi mẫu. Hệ thống sẽ kết hợp Hybrid Search, Reranking, Validation và LLM (VD: Qwen) để đưa ra câu trả lời:
 
 ```bash
-python retrieval/test_retrieval.py --local
+python test_run.py
 ```
+*Lưu ý: Bạn có thể sửa `test_run.py` để đổi model LLM (Ví dụ: `Qwen/Qwen1.5-4B-Chat` hoặc `Qwen/Qwen2.5-0.5B-Instruct`). Lần đầu chạy sẽ cần tải model từ HuggingFace.*
 
-**Chế độ online (Supabase, tự fallback về local nếu mất mạng):**
-
-```bash
-python retrieval/test_retrieval.py
-```
-
-**Các tham số hữu ích:**
+### 3. Chạy hàng loạt để lấy kết quả (Batch Retrieval)
+Để tạo file `results.json` nộp bài hoặc đánh giá toàn diện trên tệp câu hỏi lớn:
 
 ```bash
-# Chỉ định mode tìm kiếm
-python retrieval/test_retrieval.py --local --mode fts       # Full-text search (BM25)
-python retrieval/test_retrieval.py --local --mode vector    # Vector similarity
-python retrieval/test_retrieval.py --local --mode hybrid    # Hybrid RRF (mặc định)
-
-# Tìm kiếm một câu hỏi cụ thể
-python retrieval/test_retrieval.py --local --query "Điều kiện thành lập doanh nghiệp" --top-k 5
-
-# Benchmark so sánh tốc độ 3 mode
-python retrieval/test_retrieval.py --local --benchmark
-
-# Export kết quả ra JSON
-python retrieval/test_retrieval.py --local --query "Hợp đồng lao động" --export result.json
+python src/retrieval/batch_retrieve.py \
+    --input test_questions.json \
+    --output test_results.json \
+    --mode hybrid \
+    --top-k 5 \
+    --rerank \
+    --llm \
+    --llm-model "Qwen/Qwen1.5-4B-Chat"
 ```
 
 ---
 
-### BƯỚC 7 — Truy vấn hàng loạt (batch)
+## 🛡 Kiến trúc & Cơ chế phòng vệ của Pipeline
 
-> Dùng khi cần test nhiều câu hỏi cùng lúc từ file JSON.
+Dự án R2AI sử dụng **RAG Pipeline 3 Giai Đoạn** để đảm bảo tính pháp lý tuyệt đối:
 
-```bash
-python retrieval/batch_retrieve.py
-```
+1. **Retrieval & Reranking**: Kết hợp FTS5 và Vector (`bkai-bi-encoder`), sau đó dùng Reranker (`bge-reranker-v2-m3`) để đưa các điều luật liên quan nhất lên đầu.
+2. **Validator (Rào chắn ảo giác)**: Bất kỳ câu trả lời nào của AI sinh ra đều được quét Regex. Nếu AI tự bịa ra "Điều luật" không tồn tại trong tài liệu cung cấp, hệ thống lập tức chặng lại.
+3. **Safe Generation**: 
+   - LLM bị giới hạn bởi Prompt cực kỳ khắt khe (Cấm dùng Placeholder, cấm lặp lại nội dung).
+   - Nếu bị Validator chặn, LLM sẽ tự động **Retry** (nhận cảnh báo và sửa lỗi).
+   - Nếu LLM vẫn vi phạm, hệ thống tự động **Fallback** sang tạo câu trả lời tĩnh (Rule-based) từ văn bản gốc, đảm bảo không bao giờ cung cấp thông tin sai lệch cho người dùng.
 
----
-
-## 🔍 Sơ đồ pipeline
-
-```
-vietnamese-legal-documents/ (parquet)
-         │
-         ▼ Bước 2
-    src/process_chunks.py
-         │
-         ▼
-  database/local_chunks.db  ──────────────────────────────┐
-         │                                                  │
-         ▼ Bước 3                                          │
-  retrieval/setup_fts5.py                                  │
-  (tạo FTS5 table)                                         │
-         │                                                  │
-         ▼ Bước 4                                          │
-  database/generate_local_embeddings_mp.py                 │
-  (sinh vector embeddings)                                  │
-         │                                                  │
-         ▼ Bước 5 (tuỳ chọn)                              │
-  database/push_chunks_to_supabase.py                      │
-  (upload lên Supabase)                                     │
-         │                                                  │
-         ▼ Bước 6                                          ▼
-  retrieval/test_retrieval.py ←── offline: local_retriever.py
-                              ←── online:  retriever.py (Supabase)
-```
-
----
-
-## 📝 Ghi chú quan trọng
-
-| File                          | Kích thước | Ghi chú                                                                                     |
-| ----------------------------- | ---------- | ------------------------------------------------------------------------------------------- |
-| `database/local_chunks.db`    | ~3 GB      | Không commit lên git (đã có trong `.gitignore`)                                             |
-| `database/local_chunks.index` | ~1.2 GB    | FAISS index, tự động tạo khi chạy vector search lần đầu để tăng tốc tìm kiếm. Không commit. |
-| `vietnamese-legal-documents/` | ~vài GB    | Dataset gốc, không commit                                                                   |
-| Model `vietnamese-bi-encoder` | ~500 MB    | Tự động tải từ HuggingFace lần đầu                                                          |
-
-- **Offline hoàn toàn**: Chỉ cần Bước 2–4 + Bước 6 với flag `--local`
-- **Online mode**: Cần thêm Bước 5 và kết nối Supabase
-- Hệ thống tự động **fallback** về SQLite nếu Supabase không kết nối được
+*(Xem chi tiết phân tích luồng tại file `PIPELINE.md`)*
