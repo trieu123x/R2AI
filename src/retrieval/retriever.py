@@ -1167,17 +1167,19 @@ class LegalRetriever:
 
         # 4. Áp dụng Absolute & Relative Score Thresholds (Dynamic Thresholding)
         if results:
-            RERANK_THRESHOLD = 0.15
+            RERANK_THRESHOLD = 0.40
             best_score = results[0].score
             
-            relative_threshold_ratio = 0.5
+            relative_threshold_ratio = 0.65
             
             # Dynamic gap filtering: Nếu top 1 vượt trội hoàn toàn top 2
             if len(results) > 1:
                 score_1 = results[0].score
                 score_2 = results[1].score
-                if (score_1 - score_2) > 0.2:
+                if (score_1 - score_2) > 0.15:
                     relative_threshold_ratio = 0.8
+                elif score_1 > 0.9:
+                    relative_threshold_ratio = 0.75
             
             filtered_by_score = []
             for r in results:

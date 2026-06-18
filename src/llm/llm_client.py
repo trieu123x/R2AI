@@ -89,6 +89,11 @@ class QwenGenerator:
                 local_files_only=is_offline,
                 use_fast=False
             )
+            
+            # Cấu hình padding để hỗ trợ batch inference
+            self._tokenizer.padding_side = 'left'
+            if self._tokenizer.pad_token_id is None:
+                self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
             dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
@@ -147,7 +152,10 @@ class QwenGenerator:
             "- Trả lời câu hỏi dựa trên CÁC CĂN CỨ PHÁP LÝ ĐƯỢC CUNG CẤP. Tuyệt đối không tự suy diễn hoặc giả định các nội dung không có trong tài liệu.\n"
             "- Hãy viết hoàn toàn bằng tiếng Việt chuẩn mực. Tuyệt đối KHÔNG trộn lẫn tiếng Trung (chữ Hán), tiếng Anh hoặc bất kỳ từ ngữ nước ngoài nào khác.\n"
             "- Tuyệt đối KHÔNG được tự bịa ra các số hiệu văn bản, điều luật không có trong các căn cứ pháp lý.\n"
-            "- Tuyệt đối KHÔNG sử dụng tên văn bản, điều luật hoặc các từ ngữ trong Ví dụ mẫu (Few-shot) như 'Nghị định X', 'quyền công đoàn', 'thành lập công đoàn' để trả lời cho câu hỏi thực tế.\n"
+            "- Tuyệt đối không sử dụng các ký tự thay thế hoặc giữ chỗ như [X], [Y], [Z], [Nghị định số...]. Nếu tài liệu không nêu rõ số điều/khoản/năm, chỉ trích dẫn nội dung chữ hoặc ghi rõ 'Theo quy định của pháp luật hiện hành'.\n"
+            "- Hãy tổng hợp thông tin một cách ngắn gọn, súc tích. Không lặp lại cùng một ý, cùng một câu ở các mục khác nhau trong câu trả lời.\n"
+            "- Chỉ trích dẫn các thông tin trả lời trực tiếp cho câu hỏi. Không đưa các thông tin của đối tượng khác (ví dụ: doanh nghiệp công nghiệp hỗ trợ) vào câu trả lời nếu câu hỏi đang hỏi về cơ sở ươm tạo.\n"
+            "- Tuyệt đối KHÔNG sử dụng tên văn bản, điều luật hoặc các từ ngữ trong Ví dụ mẫu (Few-shot) như 'quyền công đoàn', 'thành lập công đoàn' để trả lời cho câu hỏi thực tế.\n"
             "- Cực kỳ cẩn thận với các từ phủ định hoặc hành vi cấm: các cụm từ như 'nghiêm cấm', 'không được', 'xử phạt đối với hành vi' có nghĩa là hành vi đó BỊ CẤM, tuyệt đối không được viết thành 'người sử dụng lao động được phép thực hiện'.\n"
             "- Không chỉ nêu tên văn bản chung chung. Hãy giải thích cụ thể nội dung quyền lợi, nghĩa vụ, ưu đãi hoặc mức phạt được quy định.\n\n"
             "Bạn BẮT BUỘC phải trình bày câu trả lời của mình nghiêm ngặt theo cấu trúc 4 phần sau (sử dụng chính xác các tiêu đề này làm tiêu đề dòng):\n"
@@ -175,8 +183,8 @@ class QwenGenerator:
                 "=========================================\n"
                 "[Căn cứ 1]\n"
                 "Độ liên quan: 0.9876\n"
-                "Văn bản: Nghị định X năm 2022 về xử phạt hành chính\n"
-                "Điều: Điều 20\n"
+                "Văn bản: Nghị định [Z] năm 2022 về xử phạt hành chính\n"
+                "Điều: Điều [X]\n"
                 "Nội dung:\n"
                 "Phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng đối với hành vi cản trở người lao động thành lập công đoàn.\n"
                 "=========================================\n\n"
@@ -189,7 +197,7 @@ class QwenGenerator:
                 "- Về hành vi vi phạm: Người sử dụng lao động có hành vi cản trở người lao động thành lập công đoàn bị nghiêm cấm theo quy định.\n"
                 "- Về mức phạt: Hành vi vi phạm này sẽ bị xử phạt hành chính với mức phạt tiền cụ thể từ 10.000.000 đồng đến 20.000.000 đồng.\n\n"
                 "3. Căn cứ pháp lý:\n"
-                "- Khoản 1 Điều 20 Nghị định X năm 2022.\n\n"
+                "- Khoản [Y] Điều [X] Nghị định [Z] năm 2022.\n\n"
                 "4. Hạn chế của dữ liệu (nếu có):\n"
                 "- Tài liệu được cung cấp không đề cập đến các hình thức xử phạt bổ sung hay biện pháp khắc phục hậu quả khác đối với hành vi này."
             )},
@@ -218,3 +226,119 @@ class QwenGenerator:
         
         response = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
         return response.strip()
+
+    def generate_batch_answers(self, queries: List[str], results_list: List[List[RetrievalResult]], max_new_tokens: int = 1024, warning_msgs: Optional[List[Optional[str]]] = None) -> List[str]:
+        """
+        Sinh câu trả lời cho một batch câu hỏi cùng lúc để tận dụng tối đa sức mạnh tính toán song song của GPU.
+        """
+        if not queries:
+            return []
+
+        self._lazy_load()
+
+        if warning_msgs is None:
+            warning_msgs = [None] * len(queries)
+
+        prompts = []
+        for query, results, warning_msg in zip(queries, results_list, warning_msgs):
+            if not results:
+                # Nếu không có kết quả truy xuất, tạo prompt rỗng hoặc báo lỗi
+                context = ""
+            else:
+                context_parts = []
+                for idx, r in enumerate(results, start=1):
+                    extracted_body = extract_evidence(r.content, r.article_hint)
+                    lines = extracted_body.split('\n')
+                    body_lines = [line for line in lines if not line.strip().startswith("Văn bản:")]
+                    clean_body = "\n".join(body_lines).strip()
+                    
+                    part = (
+                        f"[Căn cứ {idx}]\n"
+                        f"Độ liên quan: {r.score:.4f}\n"
+                        f"Văn bản: {r.legal_type} số {r.doc_number} {r.title}\n"
+                        f"Điều: {r.article_hint or 'Toàn bộ'}\n"
+                        f"Nội dung:\n{clean_body}"
+                    )
+                    context_parts.append(part)
+                context = "\n\n=========================================\n\n".join(context_parts)
+
+            system_prompt = (
+                "Bạn là một trợ lý pháp lý Việt Nam chuyên nghiệp, chính xác và đáng tin cậy.\n\n"
+                "Nhiệm vụ của bạn:\n"
+                "- Trả lời câu hỏi dựa trên CÁC CĂN CỨ PHÁP LÝ ĐƯỢC CUNG CẤP. Tuyệt đối không tự suy diễn hoặc giả định các nội dung không có trong tài liệu.\n"
+                "- Hãy viết hoàn toàn bằng tiếng Việt chuẩn mực. Tuyệt đối KHÔNG trộn lẫn tiếng Trung (chữ Hán), tiếng Anh hoặc bất kỳ từ ngữ nước ngoài nào khác.\n"
+                "- Tuyệt đối KHÔNG được tự bịa ra các số hiệu văn bản, điều luật không có trong các căn cứ pháp lý.\n"
+                "- Tuyệt đối không sử dụng các ký tự thay thế hoặc giữ chỗ như [X], [Y], [Z], [Nghị định số...]. Nếu tài liệu không nêu rõ số điều/khoản/năm, chỉ trích dẫn nội dung chữ hoặc ghi rõ 'Theo quy định của pháp luật hiện hành'.\n"
+                "- Hãy tổng hợp thông tin một cách ngắn gọn, súc tích. Không lặp lại cùng một ý, cùng một câu ở các mục khác nhau trong câu trả lời.\n"
+                "- Chỉ trích dẫn các thông tin trả lời trực tiếp cho câu hỏi. Không đưa các thông tin của đối tượng khác (ví dụ: doanh nghiệp công nghiệp hỗ trợ) vào câu trả lời nếu câu hỏi đang hỏi về cơ sở ươm tạo.\n"
+                "- Tuyệt đối KHÔNG sử dụng tên văn bản, điều luật hoặc các từ ngữ trong Ví dụ mẫu (Few-shot) như 'quyền công đoàn', 'thành lập công đoàn' để trả lời cho câu hỏi thực tế.\n"
+                "- Cực kỳ cẩn thận với các từ phủ định hoặc hành vi cấm: các cụm từ như 'nghiêm cấm', 'không được', 'xử phạt đối với hành vi' có nghĩa là hành vi đó BỊ CẤM, tuyệt đối không được viết thành 'người sử dụng lao động được phép thực hiện'.\n"
+                "- Không chỉ nêu tên văn bản chung chung. Hãy giải thích cụ thể nội dung quyền lợi, nghĩa vụ, ưu đãi hoặc mức phạt được quy định.\n\n"
+                "Bạn BẮT BUỘC phải trình bày câu trả lời của mình nghiêm ngặt theo cấu trúc 4 phần sau (sử dụng chính xác các tiêu đề này làm tiêu đề dòng):\n"
+                "1. Trả lời trực tiếp: Trả lời trực tiếp vào câu hỏi, nêu rõ kết luận chính hoặc hành vi và hệ quả.\n"
+                "2. Phân tích chi tiết: Diễn giải chi tiết nội dung quy định, mức phạt bằng tiền cụ thể, quyền lợi/nghĩa vụ chi tiết được quy định trong các tài liệu tham khảo.\n"
+                "3. Căn cứ pháp lý: Liệt kê chi tiết các điều khoản, điều luật cụ thể được sử dụng làm căn cứ từ tài liệu tham khảo (Ví dụ: 'Điều 17 Bộ luật Lao động 2019', 'Điều 15 Nghị định 12/2022/NĐ-CP').\n"
+                "4. Hạn chế của dữ liệu (nếu có): Nêu rõ nếu các căn cứ pháp lý được cung cấp thiếu thông tin hoặc không đủ cơ sở để trả lời đầy đủ một khía cạnh nào đó của câu hỏi."
+            )
+
+            user_content = (
+                f"TÀI LIỆU THAM KHẢO CUNG CẤP:\n"
+                f"=========================================\n"
+                f"{context}\n"
+                f"=========================================\n\n"
+                f"{f'LƯU Ý QUAN TRỌNG TỪ HỆ THỐNG: {warning_msg}\\n\\n' if warning_msg else ''}"
+                f"CÂU HỎI: {query}\n\n"
+                f"Yêu cầu trả lời: Hãy phân tích kỹ tài liệu tham khảo trên và trả lời câu hỏi tuân thủ đúng cấu trúc 4 phần nêu trên.\n"
+            )
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": (
+                    "TÀI LIỆU THAM KHẢO CUNG CẤP:\n"
+                    "=========================================\n"
+                    "[Căn cứ 1]\n"
+                    "Độ liên quan: 0.9876\n"
+                    "Văn bản: Nghị định [Z] năm 2022 về xử phạt hành chính\n"
+                    "Điều: Điều [X]\n"
+                    "Nội dung:\n"
+                    "Phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng đối với hành vi cản trở người lao động thành lập công đoàn.\n"
+                    "=========================================\n\n"
+                    "CÂU HỎI: Hành vi cản trở người lao động thành lập công đoàn bị phạt bao nhiêu tiền?\n\n"
+                    "Yêu cầu trả lời: Hãy phân tích kỹ tài liệu tham khảo trên và trả lời câu hỏi tuân thủ đúng cấu trúc 4 phần nêu trên."
+                )},
+                {"role": "assistant", "content": (
+                    "1. Trả lời trực tiếp: Hành vi cản trở người lao động thành lập công đoàn sẽ bị xử phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng.\n\n"
+                    "2. Phân tích chi tiết:\n"
+                    "- Về hành vi vi phạm: Người sử dụng lao động có hành vi cản trở người lao động thành lập công đoàn bị nghiêm cấm theo quy định.\n"
+                    "- Về mức phạt: Hành vi vi phạm này sẽ bị xử phạt hành chính với mức phạt tiền cụ thể từ 10.000.000 đồng đến 20.000.000 đồng.\n\n"
+                    "3. Căn cứ pháp lý:\n"
+                    "- Khoản [Y] Điều [X] Nghị định [Z] năm 2022.\n\n"
+                    "4. Hạn chế của dữ liệu (nếu có):\n"
+                    "- Tài liệu được cung cấp không đề cập đến các hình thức xử phạt bổ sung hay biện pháp khắc phục hậu quả khác đối với hành vi này."
+                )},
+                {"role": "user", "content": user_content}
+            ]
+
+            prompt = self._tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
+            prompts.append(prompt)
+
+        inputs = self._tokenizer(prompts, return_tensors="pt", padding=True).to(self._model.device)
+
+        outputs = self._model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            repetition_penalty=1.1,
+            pad_token_id=self._tokenizer.eos_token_id
+        )
+
+        generated_ids = [
+            output_ids[len(input_ids):] for input_ids, output_ids in zip(inputs.input_ids, outputs)
+        ]
+        
+        responses = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+        return [r.strip() for r in responses]

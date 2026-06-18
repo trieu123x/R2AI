@@ -287,48 +287,77 @@ def main():
         # lazy load model lúc này sẽ có toàn bộ VRAM
         generator._lazy_load()
         
-        for idx, (qid, question, results, r_time) in enumerate(retrieved_data, start=1):
-            if not results:
-                entry = build_submission_entry(qid, question, [], answer="Không tìm thấy tài liệu luật pháp liên quan.")
-                submission.append(entry)
+        batch_size = 5
+        for i in range(0, len(retrieved_data), batch_size):
+            batch_data = retrieved_data[i:i+batch_size]
+            
+            # Tách các câu hỏi hợp lệ (có results)
+            valid_items = []
+            for item in batch_data:
+                qid, question, results, r_time = item
+                if not results:
+                    entry = build_submission_entry(qid, question, [], answer="Không tìm thấy tài liệu luật pháp liên quan.")
+                    submission.append(entry)
+                else:
+                    valid_items.append(item)
+                    
+            if not valid_items:
                 continue
                 
+            batch_queries = [item[1] for item in valid_items]
+            batch_results_list = [item[2][:3] for item in valid_items]
+            
+            print(f"\n[batch] Đang sinh câu trả lời cho batch {i//batch_size + 1} ({len(valid_items)} câu)...", flush=True)
             t0 = time.time()
             try:
-                max_retries = 2
-                warning_msg = None
-                answer = ""
-                for attempt in range(max_retries):
-                    answer = generator.generate_answer(question, results[:3], max_new_tokens=512, warning_msg=warning_msg)
+                # Chạy inference song song cho toàn bộ batch (lượt 1)
+                batch_answers = generator.generate_batch_answers(batch_queries, batch_results_list, max_new_tokens=512)
+                elapsed_batch = time.time() - t0
+                
+                # Kiểm tra và xử lý retry cho từng câu
+                for idx_in_batch, item in enumerate(valid_items):
+                    qid, question, results, r_time = item
+                    answer = batch_answers[idx_in_batch]
+                    
                     is_valid, err_msg = validate_citations_detailed(answer, results[:3])
-                    if is_valid:
-                        break
-                    else:
-                        print(f"  [{idx:3d}/{len(questions)}] id={qid} ⚠ Phát hiện lỗi sinh ({err_msg}) lần {attempt+1}. Đang sinh lại...")
+                    extra_time = 0.0
+                    
+                    if not is_valid:
+                        # Rơi vào quá trình retry tuần tự cho câu bị lỗi
+                        t_retry = time.time()
+                        max_retries = 2
                         warning_msg = f"LƯU Ý LỚN: Ở lượt sinh trước, bạn đã mắc lỗi: {err_msg}. Hãy chú ý sửa lỗi này, không được lặp lại và không dẫn chiếu sai lệch."
-                else:
-                    print(f"  [{idx:3d}/{len(questions)}] id={qid} ⚠ Đã thử {max_retries} lần vẫn lỗi. Fallback sang Rule-based.")
-                    answer = generate_rule_based_answer(results)
-                
-                elapsed = time.time() - t0 + r_time
-                total_time += elapsed
-                
-                entry = build_submission_entry(qid, question, results, answer=answer)
-                submission.append(entry)
-                
-                docs_count = len(entry["relevant_docs"])
-                arts_count = len(entry["relevant_articles"])
-                print(f"  [{idx:3d}/{len(questions)}] id={qid} | "
-                      f"{docs_count} docs, {arts_count} articles | LLM Answer: Yes | {elapsed:.2f}s")
-                      
+                        print(f"  id={qid} ⚠ Lỗi sinh ({err_msg}). Chuyển sang Retry tuần tự...")
+                        for attempt in range(1, max_retries): # attempt=1 tức là thử lần 2
+                            answer = generator.generate_answer(question, results[:3], max_new_tokens=512, warning_msg=warning_msg)
+                            is_valid, err_msg = validate_citations_detailed(answer, results[:3])
+                            if is_valid:
+                                break
+                            else:
+                                print(f"  id={qid} ⚠ Lỗi sinh ({err_msg}) lần {attempt+1}. Đang sinh lại...")
+                                warning_msg = f"LƯU Ý LỚN: Ở lượt sinh trước, bạn đã mắc lỗi: {err_msg}. Hãy chú ý sửa lỗi này, không được lặp lại và không dẫn chiếu sai lệch."
+                        else:
+                            print(f"  id={qid} ⚠ Đã thử {max_retries} lần vẫn lỗi. Fallback sang Rule-based.")
+                            answer = generate_rule_based_answer(results)
+                        extra_time = time.time() - t_retry
+                    
+                    # Thời gian chia đều cho batch + thời gian lấy kết quả retrieval + thời gian retry (nếu có)
+                    elapsed = (elapsed_batch / len(valid_items)) + r_time + extra_time
+                    total_time += elapsed
+                    
+                    entry = build_submission_entry(qid, question, results, answer=answer)
+                    submission.append(entry)
+                    
+                    docs_count = len(entry["relevant_docs"])
+                    arts_count = len(entry["relevant_articles"])
+                    print(f"  id={qid} | {docs_count} docs, {arts_count} articles | LLM Answer: Yes | {elapsed:.2f}s")
+            
             except Exception as e:
-                elapsed = time.time() - t0 + r_time
-                total_time += elapsed
-                print(f"  [{idx:3d}/{len(questions)}] id={qid} ✗ LỖI LLM: {e} ({elapsed:.2f}s)", flush=True)
+                print(f"  ✗ LỖI BATCH LLM: {e}", flush=True)
                 import traceback
                 traceback.print_exc(file=sys.stderr)
-                sys.stderr.flush()
-                submission.append(build_submission_entry(qid, question, results, answer=""))
+                for item in valid_items:
+                    submission.append(build_submission_entry(item[0], item[1], item[2], answer=""))
     else:
         print("\n[batch] === GIAI ĐOẠN 2: SINH CÂU TRẢ LỜI RULE-BASED ===")
         for idx, (qid, question, results, r_time) in enumerate(retrieved_data, start=1):
