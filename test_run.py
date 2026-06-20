@@ -24,7 +24,7 @@ cmd = [
     "--top-k", "5",
     "--rerank",
     "--llm",
-    "--llm-model", "Qwen/Qwen2.5-0.5B-Instruct"
+    "--llm-model", "Qwen/Qwen2.5-1.5B-Instruct"
 ]
 
 with open("test_run_output.log", "w", encoding="utf-8") as out_f:

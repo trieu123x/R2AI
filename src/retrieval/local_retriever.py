@@ -171,7 +171,6 @@ class LocalRetriever:
     def _get_model(self):
         if self._model is None:
             import os
-            os.environ["HF_HUB_OFFLINE"] = "1"
             from sentence_transformers import SentenceTransformer
             import torch
             device = "cuda" if torch.cuda.is_available() else "cpu"

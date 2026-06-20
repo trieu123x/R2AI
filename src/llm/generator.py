@@ -65,29 +65,15 @@ class PipelineGenerator:
 
         self._lazy_load()
 
-        system_prompt = (
-            "Bạn là một trợ lý pháp lý Việt Nam chuyên nghiệp, chính xác và đáng tin cậy.\n\n"
-            "Nhiệm vụ của bạn:\n"
-            "- Trả lời câu hỏi dựa trên CÁC CĂN CỨ PHÁP LÝ ĐƯỢC CUNG CẤP. Tuyệt đối không tự suy diễn hoặc giả định các nội dung không có trong tài liệu.\n"
-            "- Hãy viết hoàn toàn bằng tiếng Việt chuẩn mực. Tuyệt đối KHÔNG trộn lẫn tiếng Trung (chữ Hán), tiếng Anh hoặc bất kỳ từ ngữ nước ngoài nào khác.\n"
-            "- Tuyệt đối KHÔNG được tự bịa ra các số hiệu văn bản, điều luật không có trong các căn cứ pháp lý.\n"
-            "- Cực kỳ cẩn thận với các từ phủ định hoặc hành vi cấm.\n"
-            "- Không chỉ nêu tên văn bản chung chung. Hãy giải thích cụ thể nội dung.\n\n"
-            "Bạn BẮT BUỘC phải trình bày câu trả lời của mình nghiêm ngặt theo cấu trúc 4 phần sau:\n"
-            "1. Trả lời trực tiếp: ...\n"
-            "2. Phân tích chi tiết: ...\n"
-            "3. Căn cứ pháp lý: ...\n"
-            "4. Hạn chế của dữ liệu (nếu có): ..."
-        )
+        from src.prompts.prompt_templates import SYSTEM_PROMPT, USER_CONTENT_TEMPLATE
 
-        user_content = (
-            f"TÀI LIỆU THAM KHẢO CUNG CẤP:\n"
-            f"=========================================\n"
-            f"{context}\n"
-            f"=========================================\n\n"
-            f"{f'LƯU Ý QUAN TRỌNG TỪ HỆ THỐNG: {warning_msg}\n\n' if warning_msg else ''}"
-            f"CÂU HỎI: {query}\n\n"
-            f"Yêu cầu trả lời: Hãy phân tích kỹ tài liệu tham khảo trên và trả lời câu hỏi tuân thủ đúng cấu trúc 4 phần nêu trên.\n"
+        system_prompt = SYSTEM_PROMPT
+
+        warning_str = f"LƯU Ý QUAN TRỌNG TỪ HỆ THỐNG: {warning_msg}\n\n" if warning_msg else ""
+        user_content = USER_CONTENT_TEMPLATE.format(
+            context=context,
+            warning_msg=warning_str,
+            query=query
         )
 
         messages = [
@@ -106,8 +92,9 @@ class PipelineGenerator:
         outputs = self._model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
-            do_sample=False,
-            repetition_penalty=1.05,
+            do_sample=True,
+            temperature=0.1,
+            repetition_penalty=1.15,
             pad_token_id=self._tokenizer.eos_token_id
         )
 

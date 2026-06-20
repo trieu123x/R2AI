@@ -15,7 +15,7 @@ class PipelineReranker:
     Step 5: Reranker (PhoRanker)
     Step 6: Top 5
     """
-    def __init__(self, model_name="itdainb/PhoRanker", top_n=5):
+    def __init__(self, model_name="BAAI/bge-reranker-v2-m3", top_n=5): # Hoặc đường dẫn thư mục model BAAI bạn đã tải về (VD: "C:/path/to/bge-reranker-v2-m3")
         self.model_name = model_name
         self.top_n = top_n
         self._reranker = None

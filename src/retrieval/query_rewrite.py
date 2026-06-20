@@ -51,7 +51,7 @@ class QueryRewriter:
             "Truy vấn tìm kiếm:"
         )
         if hasattr(self.llm_generator, 'generate_direct'):
-            rewritten = self.llm_generator.generate_direct(prompt, max_new_tokens=30)
+            rewritten = self.llm_generator.generate_direct(prompt, max_new_tokens=50)
             if rewritten and len(rewritten) > 5:
                 return rewritten
         return query
