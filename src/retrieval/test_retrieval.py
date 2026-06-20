@@ -40,7 +40,7 @@ def _sanitize_query(q: str) -> str:
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.retrieval.local_retriever import LocalRetriever, RetrievalResult
+from src.retrieval.retriever import LegalRetriever, RetrievalResult
 
 
 # ─── ANSI Colors ───────────────────────────────────────────────────────────────
@@ -101,7 +101,6 @@ def print_result(idx: int, r: RetrievalResult, show_content: bool = True, max_ch
 
 def print_submission_format(results: list[RetrievalResult]):
     """In ra định dạng relevant_docs và relevant_articles cho bài nộp."""
-    retriever = LocalRetriever.__new__(LocalRetriever)  # chỉ dùng static method
     docs_seen = set()
     articles_seen = set()
     relevant_docs = []
@@ -131,9 +130,27 @@ def print_submission_format(results: list[RetrievalResult]):
     print(hr('='))
 
 
-def print_document_summary(retriever: LocalRetriever, results: list[RetrievalResult]):
+def print_document_summary(retriever: LegalRetriever, results: list[RetrievalResult]):
     """Tóm tắt kết quả theo văn bản pháp lý."""
-    docs = retriever.aggregate_by_document(results)
+    # Inline aggregate_by_document logic
+    docs: dict = {}
+    for r in results:
+        did = r.document_id
+        if did not in docs:
+            docs[did] = {
+                "doc_number": r.doc_number,
+                "title": r.title,
+                "legal_type": r.legal_type,
+                "chunks": [],
+                "articles": set(),
+                "max_score": 0.0,
+            }
+        docs[did]["chunks"].append(r.chunk_index)
+        if r.article_hint:
+            docs[did]["articles"].add(r.article_hint)
+        if r.score > docs[did]["max_score"]:
+            docs[did]["max_score"] = r.score
+
     sorted_docs = sorted(docs.items(), key=lambda x: -x[1]["max_score"])
 
     print(f"\n{hr('-')}")
@@ -141,7 +158,7 @@ def print_document_summary(retriever: LocalRetriever, results: list[RetrievalRes
     print(hr('-'))
 
     for doc_id, doc in sorted_docs:
-        articles_str = ", ".join(doc["articles"]) if doc["articles"] else "-"
+        articles_str = ", ".join(sorted(doc["articles"])) if doc["articles"] else "-"
         print(f"  {colorize(doc['doc_number'], C.BOLD)}  {colorize(doc['legal_type'], C.GRAY)}")
         print(f"    Tieu de : {doc['title'][:70]}")
         print(f"    Chunks  : {len(doc['chunks'])}  |  Max score: {doc['max_score']:.4f}")
@@ -151,7 +168,7 @@ def print_document_summary(retriever: LocalRetriever, results: list[RetrievalRes
 
 # ─── Benchmark ────────────────────────────────────────────────────────────────
 
-def run_benchmark(retriever: LocalRetriever, query: str, top_k: int):
+def run_benchmark(retriever: LegalRetriever, query: str, top_k: int):
     print(f"\n{hr('=')}")
     print(colorize("  [BENCHMARK SO SANH 3 MODE]", C.BOLD + C.YELLOW))
     print(hr('='))
