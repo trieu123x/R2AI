@@ -1,211 +1,173 @@
-# R2AI — Vietnamese Legal RAG Assistant
+# R2AI — Legal RAG Assistant (Vietnamese)
 
-Hệ thống RAG (Retrieval-Augmented Generation) chuyên sâu dành cho văn bản pháp lý tiếng Việt. Hệ thống được thiết kế tối ưu hiệu năng chạy trên môi trường **Kaggle (GPU T4 x 2)** và **Local Offline**, chống ảo giác (hallucination) nhờ cơ chế kiểm duyệt chặt chẽ, kết hợp tìm kiếm đa mô thức (Hybrid Search: BM25 + Vector) và chấm điểm lại (Reranking).
-
----
-
-## 🏛️ Kiến trúc RAG Pipeline 3 Giai Đoạn
-
-```mermaid
-graph TD
-    A[Câu hỏi người dùng] --> B(Hybrid Search: FTS5 + Vector)
-    B --> C(RRF - Reciprocal Rank Fusion)
-    C --> D(Cross-Encoder Reranking: BAAI/bge-reranker-v2-m3)
-    D --> E(Giải phóng VRAM khỏi GPU)
-    E --> F(Khởi tạo LLM: Qwen2.5-7B-Instruct)
-    F --> G(Kiểm duyệt Regex Validator)
-    G -- Hợp lệ --> H[Đáp án cuối cùng]
-    G -- Phát hiện ảo giác --> I(Auto-Retry sửa lỗi)
-    I -- Thất bại liên tiếp --> J(Fallback về Luật gốc)
-```
-
-1. **Giai đoạn 1: Retrieval & Reranking**
-   * Sử dụng SQLite cục bộ làm DB.
-   * Chạy song song FTS5 (từ khóa) và Vector Search (`bkai-bi-encoder`).
-   * Reranking bằng mô hình `BAAI/bge-reranker-v2-m3` để chọn ra Top-K điều luật chuẩn xác nhất.
-2. **Giai đoạn giải phóng VRAM (GPU Memory Cleanup)**
-   * Giải phóng hoàn toàn các mô hình Embedding và Reranker để GPU trống 100% trước khi nạp LLM.
-3. **Giai đoạn 2: Generation & Validation**
-   * Load LLM `Qwen2.5-7B-Instruct` qua `device_map="auto"` (chia model lên cả 2 GPU T4).
-   * Kiểm duyệt chặt chẽ bằng regex (`validator.py`). Nếu phát hiện AI bịa điều luật, hệ thống kích hoạt **Auto-Retry** (tối đa 2 lần).
-   * Nếu vẫn lỗi, hệ thống tự động **Fallback** lấy văn bản luật gốc làm đáp án để tránh ảo giác.
+Hệ thống RAG (Retrieval-Augmented Generation) dành cho văn bản pháp lý tiếng Việt, phục vụ cuộc thi **R2AI 2026**.  
+Sử dụng **SQLite + FTS5** (offline) kết hợp **Supabase PostgreSQL + pgvector** (online) để tra cứu văn bản pháp luật theo hybrid search (BM25 + vector).
 
 ---
 
-## 🚀 Quy trình thực thi trên Kaggle (GPU T4 x 2)
+## 📁 Cấu trúc thư mục
 
-Để chạy trơn tru 2000 câu hỏi trên Kaggle không lo bị tràn VRAM hay bị treo tiến trình (deadlock), hãy làm theo 2 bước tương ứng với 2 block trong Notebook:
-
-### 📥 Bước 1: Thiết lập môi trường & Patch đa GPU (Block 1)
-Dán và chạy đoạn code sau trong cell Setup. Cell này sẽ:
-* Hạ cấp thư viện `transformers` và `tokenizers` để sửa lỗi `prepare_for_model`.
-* Liên kết (symlink) database và file câu hỏi.
-* Tạo file patch `/kaggle/working/sitecustomize.py` cấu hình Reranker chạy trên `cuda:0` nhằm chống lỗi treo deadlock của PyTorch trên môi trường T4 x 2.
-
-```python
-import os, sys, shutil, subprocess
-
-# 1. Cài đặt thư viện tương thích (Tránh lỗi 'prepare_for_model' trên Kaggle)
-print("📦 Đang cấu hình phiên bản thư viện tương thích...")
-try:
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-q", "--no-warn-script-location", "transformers==4.44.2", "tokenizers==0.19.1"],
-        check=True
-    )
-    print("✅ Cài đặt thư viện thành công.")
-except Exception as e:
-    print(f"⚠️ Cảnh báo lỗi khi cài đặt thư viện: {e}")
-
-WORKING   = "/kaggle/working"
-INPUT_BASE = "/kaggle/input"
-
-# 2. Tìm kiếm datasets tự động
-# Tìm kiếm thư mục code và database (đã unzip) từ Kaggle input
-code_dir = None
-data_dir = None
-for item in os.listdir(INPUT_BASE):
-    path = os.path.join(INPUT_BASE, item)
-    if not os.path.isdir(path):
-        continue
-    if any(k in item.lower() for k in ["code", "r2aiii"]):
-        code_dir = path
-    elif any(k in item.lower() for k in ["data", "database"]):
-        data_dir = path
-
-# Tạo liên kết database sang /kaggle/working
-db_dst = os.path.join(WORKING, "database")
-if data_dir and os.path.exists(data_dir):
-    if os.path.islink(db_dst) or os.path.exists(db_dst):
-        os.remove(db_dst)
-    os.symlink(os.path.join(data_dir, "database"), db_dst)
-    print(f"🔗 Symlink Database: {data_dir} -> {db_dst}")
-
-# 3. Tạo file Patch chống deadlock đa GPU (Sitecustomize)
-with open("/kaggle/working/sitecustomize.py", "w", encoding="utf-8") as f:
-    f.write('''
-import os
-import builtins
-orig_import = builtins.__import__
-
-def custom_import(name, globals=None, locals=None, fromlist=(), level=0):
-    module = orig_import(name, globals, locals, fromlist, level)
-    if name == "sentence_transformers":
-        try:
-            import torch
-            from FlagEmbedding import FlagReranker
-            class FlagRerankerCrossEncoderPatch:
-                def __init__(self, model_path, device=None, automodel_args=None):
-                    if not os.path.exists(model_path):
-                        model_path = "BAAI/bge-reranker-v2-m3"
-                    use_fp16 = (device == "cuda" or device == "cuda:0")
-                    dev = "cuda:0" if torch.cuda.is_available() else "cpu"
-                    print(f"[Kaggle Patch] Khởi tạo FlagReranker: {model_path} (use_fp16={use_fp16}, devices={dev})")
-                    self.reranker = FlagReranker(model_path, use_fp16=use_fp16, devices=dev)
-                def predict(self, pairs, show_progress_bar=False):
-                    return self.reranker.compute_score(pairs)
-            module.CrossEncoder = FlagRerankerCrossEncoderPatch
-            print("[Kaggle Patch] Đã ghi đè CrossEncoder thành FlagReranker thành công!")
-        except Exception as e:
-            print(f"[Kaggle Patch] Lỗi khi apply patch: {e}")
-    return module
-
-builtins.__import__ = custom_import
-''')
-print("✅ Hoàn tất thiết lập Block 1!")
 ```
-
-### 🏃‍♂️ Bước 2: Chạy thực thi Pipeline (Block 2)
-Chạy cell này trực tiếp bằng lệnh terminal (`!`) để xem log thời gian thực (real-time unbuffered logging) không sợ bị trễ log:
-
-```bash
-!PYTHONPATH=/kaggle/working python -u /kaggle/working/code/src/retrieval/batch_retrieve.py \
-    --input /kaggle/working/database/R2AIStage1DATA.json \
-    --output /kaggle/working/results.json \
-    --mode hybrid \
-    --top-k 10 \
-    --rerank \
-    --llm \
-    --llm-model Qwen/Qwen2.5-7B-Instruct
+R2AI/
+│
+├── .env                          # Biến môi trường (Supabase URL, DB URL, keys)
+│
+├── config/
+│   └── config.py                 # Đọc .env, cung cấp class Config cho toàn project
+│
+├── src/                          # Xử lý dữ liệu thô → chunks
+│   ├── legal_chunker.py          # Module chunking văn bản pháp lý (core logic)
+│   ├── process_chunks.py         # Script chính: lọc, chunk, lưu vào local SQLite
+│   └── test_chunking.py          # Kiểm tra chất lượng chunking trên ~5 docs mẫu
+│
+├── database/                     # Tạo embeddings + đồng bộ lên Supabase
+│   ├── schema.sql                # Schema Supabase (documents + document_chunks)
+│   ├── generate_local_embeddings_mp.py   # Sinh embeddings bằng CPU (multiprocessing)
+│   └── push_chunks_to_supabase.py        # Upload chunks + embeddings lên Supabase
+│
+├── retrieval/                    # Pipeline truy vấn
+│   ├── local_retriever.py        # Retriever offline dùng SQLite + FTS5 + vector
+│   ├── retriever.py              # Retriever online dùng Supabase PostgreSQL
+│   ├── batch_retrieve.py         # Truy vấn hàng loạt câu hỏi từ file JSON
+│   ├── setup_fts5.py             # Tạo FTS5 virtual table trong SQLite
+│   └── test_retrieval.py         # CLI tương tác test retrieval (không cần LLM)
+│
+├── logs/                         # Output, báo cáo sinh ra khi chạy scripts
+├── data/                         # Dữ liệu thô (data/raw) và đã xử lý (data/processed)
+└── vietnamese-legal-documents/   # Dataset gốc (parquet) — không commit lên git
+    ├── metadata/                 # Metadata các văn bản pháp lý
+    └── content/                  # Nội dung full-text các văn bản
 ```
-
-*Lưu ý:* Hệ thống tích hợp sẵn cơ chế checkpoint. Nếu phiên chạy bị ngắt quãng do hết thời gian (timeout) hoặc kernel tự động reset, bạn chỉ cần bấm chạy lại Block 2, hệ thống sẽ tự động resume từ câu hỏi gần nhất mà không phải làm lại từ đầu.
 
 ---
 
-## 💻 Hướng dẫn chạy trên môi trường Local (Máy cá nhân)
+## ⚙️ Cài đặt môi trường
 
-### 1. Cài đặt thư viện
+### 1. Tạo và kích hoạt môi trường ảo (.venv)
+
+Nên đặt tên thư mục môi trường ảo là `.venv` (tránh đặt tên trùng với file `.env` cấu hình để không bị ghi đè/nhầm lẫn).
+
+* **Bước A: Tạo môi trường ảo**
+  ```bash
+  python -m venv .venv
+  ```
+
+* **Bước B: Kích hoạt môi trường ảo**
+  * **Dành cho Command Prompt (CMD):**
+    ```cmd
+    .venv\Scripts\activate.bat
+    ```
+  * **Dành cho PowerShell:**
+    ```powershell
+    .venv\Scripts\Activate.ps1
+    ```
+    *Lưu ý:* Nếu gặp lỗi bảo mật (Execution Policy) trên PowerShell, chạy lệnh sau trước khi kích hoạt:
+    ```powershell
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+    ```
+
+### 2. Cài đặt các thư viện (Python packages)
+
+Sau khi đã kích hoạt môi trường ảo (bạn sẽ thấy `(.venv)` xuất hiện ở đầu dòng lệnh), tiến hành cài đặt các package:
+Hệ thống RAG (Retrieval-Augmented Generation) chuyên sâu dành cho văn bản pháp lý tiếng Việt. Hệ thống được thiết kế để chống lại các lỗi rủi ro của AI (hallucination) nhờ cơ chế kiểm duyệt chặt chẽ, kết hợp tìm kiếm đa mô thức (Hybrid Search: BM25 + Vector) và chấm điểm lại (Reranking).
+
+---
+
+## ⚙️ Hướng dẫn cài đặt môi trường
+
+### 1. Cài đặt Python packages
+Yêu cầu Python 3.8 trở lên. Cài đặt các thư viện cần thiết bằng lệnh:
+
 ```bash
 pip install -r requirements.txt
 ```
+*(Hoặc cài thủ công: `pip install sentence-transformers pandas pyarrow psycopg2-binary python-dotenv numpy pyvi faiss-cpu torch transformers accelerate`)*
 
-### 2. Tiền xử lý dữ liệu
-Nếu bạn xây dựng database cục bộ từ đầu:
-1. **Phân đoạn văn bản**: `python src/process_chunks.py` (tạo `database/local_chunks.db`).
-2. **Cấu hình FTS5**: `python retrieval/setup_fts5.py` (tạo bảng ảo tìm kiếm từ khóa).
-3. **Tạo Vector**: `python database/generate_local_embeddings_mp.py` (mã hóa vector FAISS).
+### 3. Cấu hình `.env`
 
-### 3. Kiểm thử nhanh
-Chạy file test 5 câu hỏi cục bộ:
-```bash
-python test_run.py
+Tạo file `.env` tại root (đã có sẵn, chỉ cần cập nhật nếu đổi project Supabase):
+### 2. Cấu hình biến môi trường (`.env`)
+Tạo file `.env` tại thư mục gốc (nếu dùng cơ sở dữ liệu Supabase online). Nếu chỉ chạy local SQLite thì không bắt buộc, nhưng khuyến nghị:
+
+```env
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_ANON_KEY=<anon_key>
+SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
+DATABASE_URL=postgresql://postgres.<project>:<password>@<host>:5432/postgres
 ```
 
 ---
 
-## 🔍 Chi Tiết Pipeline của Retriever (Truy xuất nâng cao)
+## 🚀 Hướng dẫn tiền xử lý dữ liệu (Data Pipeline)
 
-Để đạt độ chính xác cao nhất đối với các câu hỏi pháp luật, class `LegalRetriever` (`src/retrieval/retriever.py`) triển khai một pipeline truy xuất 9 bước nghiêm ngặt:
+Trước khi hệ thống có thể trả lời câu hỏi, bạn cần xử lý dữ liệu thô và xây dựng Database tìm kiếm:
 
-```mermaid
-graph TD
-    Q[Câu hỏi gốc] --> QExp[1. Query Expansion]
-    QExp --> Search[2. Hybrid Search FTS5 + Vector]
-    Search --> ChkDedup[3. Lọc trùng lặp cấp Chunk]
-    ChkDedup --> ParentExp[4. Parent Article Window Expansion]
-    ParentExp --> Rerank[5. Cross-Encoder Rerank + Legal Weights]
-    Rerank --> DynThresh[6. Dynamic Thresholding & Gap Filtering]
-    DynThresh --> ArtDedup[7. Article-level Dedup]
-    ArtDedup --> IntentFilter[8. Intent-aware POS Keyword Filter]
-    IntentFilter --> TopK[9. Top-K Final Chunks]
+**Bước 1: Lọc, Chunking và lưu vào SQLite cục bộ**
+Chạy lệnh dưới đây để cắt văn bản pháp lý thành các đoạn nhỏ (chunk) theo từng Điều khoản:
+```bash
+python src/process_chunks.py
+```
+*(Kết quả tạo ra `database/local_chunks.db` chứa dữ liệu văn bản)*
+
+**Bước 2: Thiết lập Full-Text Search (FTS5)**
+Tạo bảng tìm kiếm từ khóa ảo (Virtual Table) bên trong SQLite:
+```bash
+python retrieval/setup_fts5.py
 ```
 
-1. **Giai đoạn 1: Query Expansion (Intent Understanding)**
-   * Phân tích và mở rộng từ khóa trong câu hỏi của người dùng nhằm tối ưu hóa khả năng khớp từ khóa FTS5 và tìm kiếm ngữ nghĩa.
+**Bước 3: Sinh Vector Embeddings**
+Mã hóa văn bản thành Vector ngữ nghĩa (có thể mất nhiều giờ nếu chạy CPU):
+```bash
+python database/generate_local_embeddings_mp.py
+```
 
-2. **Giai đoạn 2: Candidate Retrieval (BM25 + Semantic)**
-   * Thực hiện tìm kiếm song song:
-     * **FTS5 (BM25)**: SQLite virtual table cho kết quả nhanh và chính xác theo từ khóa pháp lý.
-     * **Vector Search**: Sử dụng mô hình `bkai-bi-encoder` để lấy embedding và so khớp độ tương đồng FAISS.
-   * Kết hợp kết quả của 2 luồng qua thuật toán **RRF (Reciprocal Rank Fusion)** với trọng số tùy chỉnh (mặc định: FTS 0.7 / Vector 0.3) tạo ra danh sách ứng viên (candidate pool) gồm 50 chunks.
+---
 
-3. **Giai đoạn 3: Chunk-level De-duplication**
-   * Lọc bỏ những chunk trùng lặp hoặc gần như trùng lặp hoàn toàn về ký tự (sau khi đã normalize text) để tránh dư thừa thông tin.
+## 🧠 Hướng dẫn Chạy & Kiểm thử Hệ thống (RAG Pipeline)
 
-4. **Giai đoạn 4: Parent Article Window Expansion (Mở rộng ngữ cảnh)**
-   * Dựa vào `article_hint` (ví dụ: *Điều 15*), hệ thống tự động tìm và gộp các chunk liền kề (trong khoảng window `+/- 2` chunk của kết quả hit) để tạo nên nội dung Điều luật đầy đủ, mạch lạc.
-   * Đồng thời lưu trữ `best_chunk_content` (chunk có điểm số cao nhất ban đầu) để làm đầu vào so khớp cho bước Rerank sau đó.
+### 1. Kiểm thử tìm kiếm cơ bản (Chưa dùng LLM)
+Sử dụng CLI tương tác để kiểm tra xem hệ thống có tìm đúng tài liệu hay không (Offline mode):
 
-5. **Giai đoạn 5: Cross-Encoder Reranking & Boosting**
-   * Sử dụng `bge-reranker-v2-m3` để so khớp trực tiếp giữa cặp `[Câu hỏi, Chunk]`.
-   * Áp dụng trọng số ưu tiên **Legal Authority Boosting** để nhân điểm số dựa trên cấp bậc pháp lý của văn bản:
-     * `Luật / Bộ luật`: nhân hệ số `1.0`
-     * `Nghị quyết`: nhân hệ số `0.95`
-     * `Nghị định`: nhân hệ số `0.85`
-     * `Thông tư`: nhân hệ số `0.75`
+```bash
+python retrieval/test_retrieval.py --local --mode hybrid --query "Điều kiện thành lập doanh nghiệp" --top-k 5
+```
+Các tham số:
+- `--mode`: Chọn `fts` (Từ khóa), `vector` (Ngữ nghĩa) hoặc `hybrid` (Kết hợp cả hai).
+- `--benchmark`: Thêm flag này để đánh giá tốc độ giữa các phương pháp.
 
-6. **Giai đoạn 6: Dynamic Thresholding & Gap Filtering**
-   * Loại bỏ các tài liệu có điểm Rerank thấp hơn ngưỡng tuyệt đối `0.40`.
-   * Lọc động theo tỷ lệ điểm so với ứng viên cao nhất (Relative Threshold `65%`).
-   * **Dynamic Gap Filtering**: Nếu ứng viên Top 1 có điểm số vượt trội hoàn toàn so với Top 2 (chênh lệch `> 0.25`), tỷ lệ lọc tương đối sẽ tự động tăng lên `85%` để loại bỏ toàn bộ các chunk nhiễu phía dưới.
+### 2. Kiểm thử luồng End-to-End (RAG: Tìm kiếm + AI sinh câu trả lời)
+Chạy script test cục bộ với 5 câu hỏi mẫu. Hệ thống sẽ kết hợp Hybrid Search, Reranking, Validation và LLM (VD: Qwen) để đưa ra câu trả lời:
 
-7. **Giai đoạn 7: Article-level De-duplication**
-   * Đảm bảo cấu trúc ngữ cảnh gọn gàng bằng cách chỉ giữ lại tối đa 1 phiên bản duy nhất cho mỗi đơn vị Điều luật (`document_id` + `article_hint`).
+```bash
+python test_run.py
+```
+*Lưu ý: Bạn có thể sửa `test_run.py` để đổi model LLM (Ví dụ: `Qwen/Qwen1.5-4B-Chat` hoặc `Qwen/Qwen2.5-0.5B-Instruct`). Lần đầu chạy sẽ cần tải model từ HuggingFace.*
 
-8. **Giai đoạn 8: Intent-aware POS Keyword Filter**
-   * Sử dụng thư viện `underthesea` để tách nhãn từ loại (POS Tagging) của câu hỏi gốc, lọc ra các danh từ, danh từ riêng, động từ và tính từ cốt lõi.
-   * Kiểm tra xem nội dung của Điều luật được truy xuất có chứa ít nhất một trong các từ khóa cốt lõi này không. Nếu không, hệ thống sẽ loại bỏ Điều luật đó để tránh bị lệch chủ đề. (Nếu lọc hết, hệ thống sẽ tự động bypass và lấy kết quả trước đó).
+### 3. Chạy hàng loạt để lấy kết quả (Batch Retrieval)
+Để tạo file `results.json` nộp bài hoặc đánh giá toàn diện trên tệp câu hỏi lớn:
 
-9. **Giai đoạn 9: Top-K Output**
-   * Trích xuất Top-K (mặc định: 10) tài liệu chuẩn xác nhất để đưa vào prompt cho LLM sinh đáp án.
+```bash
+python src/retrieval/batch_retrieve.py \
+    --input test_questions.json \
+    --output test_results.json \
+    --mode hybrid \
+    --top-k 5 \
+    --rerank \
+    --llm \
+    --llm-model "Qwen/Qwen1.5-4B-Chat"
+```
 
+---
+
+## 🛡 Kiến trúc & Cơ chế phòng vệ của Pipeline
+
+Dự án R2AI sử dụng **RAG Pipeline 3 Giai Đoạn** để đảm bảo tính pháp lý tuyệt đối:
+
+1. **Retrieval & Reranking**: Kết hợp FTS5 và Vector (`bkai-bi-encoder`), sau đó dùng Reranker (`bge-reranker-v2-m3`) để đưa các điều luật liên quan nhất lên đầu.
+2. **Validator (Rào chắn ảo giác)**: Bất kỳ câu trả lời nào của AI sinh ra đều được quét Regex. Nếu AI tự bịa ra "Điều luật" không tồn tại trong tài liệu cung cấp, hệ thống lập tức chặng lại.
+3. **Safe Generation**: 
+   - LLM bị giới hạn bởi Prompt cực kỳ khắt khe (Cấm dùng Placeholder, cấm lặp lại nội dung).
+   - Nếu bị Validator chặn, LLM sẽ tự động **Retry** (nhận cảnh báo và sửa lỗi).
+   - Nếu LLM vẫn vi phạm, hệ thống tự động **Fallback** sang tạo câu trả lời tĩnh (Rule-based) từ văn bản gốc, đảm bảo không bao giờ cung cấp thông tin sai lệch cho người dùng.
+
+*(Xem chi tiết phân tích luồng tại file `PIPELINE.md`)*
