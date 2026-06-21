@@ -6,48 +6,259 @@ STDOUT and STDERR:
 [batch] === GIAI ĐOẠN 1: TRUY XUẤT TÀI LIỆU (RETRIEVAL) ===
 [local][FTS5] Structured query: ("ươm tạo" OR "cơ sở ươm tạo" OR "khu làm việc chung" OR "làm việc chung") AND ("thuế" OR "đất đai" OR "mặt bằng" OR "thuê đất" OR "ưu đãi thuế" OR "tiền sử dụng đất" OR "giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
 [local] Loading bkai-bi-encoder on device 'cuda'...
-[local] Model loaded in 5.5s
+[local] Model loaded in 5.8s
 [local] Loading FAISS index from C:\Users\admin\Downloads\R2AI\database\local_chunks.index...
-[local] FAISS index loaded in 2.14s
+[local] FAISS index loaded in 1.57s
 [local] Loading reranker model BAAI/bge-reranker-v2-m3 on device 'cuda'...
-[local] Reranker model loaded in 6.1s
-[local] Reranking took 1.40s for 29 pairs.
-[local] mode=hybrid | rerank=True | 4 results | 35.47s
-  [  1/5] id=1 | Reranked/Retrieved | 35.47s
+[local] Reranker model loaded in 5.1s
+[local] Reranking took 1.56s for 28 pairs.
+[local] mode=hybrid | rerank=True | 4 results | 35.86s
+  [  1/5] id=1 | Reranked/Retrieved | 35.86s
 [local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ") AND ("đấu thầu" OR "nhà thầu" OR "lựa chọn nhà thầu" OR "gói thầu" OR "xếp hạng hồ sơ")
-[local] Reranking took 0.77s for 41 pairs.
-[local] mode=hybrid | rerank=True | 5 results | 1.58s
-  [  2/5] id=2 | Reranked/Retrieved | 1.58s
+[local] Reranking took 0.71s for 41 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 1.62s
+  [  2/5] id=2 | Reranked/Retrieved | 1.62s
 [local][FTS5] Structured query: ("người lao động" OR "lao động" OR "nhân viên" OR "hợp đồng lao động") AND ("giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
-[local] Reranking took 0.46s for 31 pairs.
-[local] mode=hybrid | rerank=True | 2 results | 1.85s
-  [  3/5] id=3 | Reranked/Retrieved | 1.85s
+[local] Reranking took 0.47s for 31 pairs.
+[local] mode=hybrid | rerank=True | 2 results | 2.21s
+  [  3/5] id=3 | Reranked/Retrieved | 2.21s
 [local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ")
-[local] Reranking took 0.43s for 36 pairs.
-[local] mode=hybrid | rerank=True | 5 results | 0.88s
-  [  4/5] id=4 | Reranked/Retrieved | 0.88s
+[local] Reranking took 0.42s for 35 pairs.
+[local] mode=hybrid | rerank=True | 5 results | 0.95s
+  [  4/5] id=4 | Reranked/Retrieved | 0.95s
 [local][FTS5] Structured query: ("doanh nghiệp nhỏ và vừa" OR "nhỏ và vừa" OR "doanh nghiệp nhỏ" OR "doanh nghiệp siêu nhỏ") AND ("thuế" OR "đất đai" OR "mặt bằng" OR "thuê đất" OR "ưu đãi thuế" OR "tiền sử dụng đất" OR "giữ" OR "thu giữ" OR "tạm giữ" OR "văn bằng" OR "chứng chỉ" OR "giấy tờ tùy thân" OR "bản chính" OR "bằng cấp")
-[local] Reranking took 0.54s for 36 pairs.
-[local] mode=hybrid | rerank=True | 3 results | 1.20s
-  [  5/5] id=5 | Reranked/Retrieved | 1.20s
+[local] Reranking took 0.65s for 37 pairs.
+[local] mode=hybrid | rerank=True | 3 results | 1.36s
+  [  5/5] id=5 | Reranked/Retrieved | 1.36s
 
 [batch] Giải phóng retriever và giải phóng GPU memory...
 
 [batch] === GIAI ĐOẠN 2: KHỞI TẠO LLM VÀ SINH CÂU TRẢ LỜI (GENERATION) ===
-[generator] Đang load model 'Qwen/Qwen2.5-1.5B-Instruct' (Offline=False)...
+[generator] Loading model 'Qwen/Qwen2.5-1.5B-Instruct' with Transformers (Offline=False)...
 [generator] GPU free VRAM: 4.4 GB
-[generator] Chế độ: GPU (dtype=torch.bfloat16, device_map=auto)
-[generator] Model loaded in 7.9s
+[generator] Chế độ: GPU đơn (dtype=torch.bfloat16, device_map=auto)
+[generator] Model loaded in 9.3s
 
-[batch] Đang sinh câu trả lời cho batch 1 (5 câu)...
-  id=1 | 4 docs, 4 articles | LLM Answer: Yes | 45.62s
-  id=2 | 4 docs, 5 articles | LLM Answer: Yes | 11.73s
-  id=3 | 2 docs, 2 articles | LLM Answer: Yes | 12.00s
-  id=4 | 4 docs, 5 articles | LLM Answer: Yes | 11.03s
-  id=5 | 3 docs, 3 articles | LLM Answer: Yes | 11.35s
-------------------------------------------------------------
-[batch] ✓ Xong! 5 câu | avg 18.35s/câu
-[batch] ✓ Đã ghi → test_results.json
+[batch] Đang sinh câu trả lời cho batch 1 (3 câu)...
+  ✗ LỖI BATCH LLM: 
+Traceback (most recent call last):
+  File "C:\Users\admin\Downloads\R2AI\src\retrieval\batch_retrieve.py", line 311, in main
+    batch_answers = generator.generate_batch_answers(batch_queries, batch_results_list, max_new_tokens=512)
+  File "C:\Users\admin\Downloads\R2AI\src\llm\llm_client.py", line 453, in generate_batch_answers
+    outputs = self._model.generate(
+        **inputs,
+    ...<3 lines>...
+        pad_token_id=self._tokenizer.eos_token_id
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\utils\_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\transformers\generation\utils.py", line 2566, in generate
+    result = decoding_method(
+        self,
+    ...<5 lines>...
+        **model_kwargs,
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\transformers\generation\utils.py", line 2789, in _sample
+    outputs = model_forward(**model_inputs, return_dict=True)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\nn\modules\module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\nn\modules\module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\transformers\utils\generic.py", line 918, in wrapper
+    output = func(self, *args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\transformers\models\qwen2\modeling_qwen2.py", line 449, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+                                       ~~~~~~~~~~^
+        input_ids=input_ids,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\nn\modules\module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\nn\modules\module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\transformers\utils\generic.py", line 1072, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\transformers\models\qwen2\modeling_qwen2.py", line 372, in forward
+    "full_attention": create_causal_mask(**mask_kwargs),
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\transformers\masking_utils.py", line 825, in create_causal_mask
+    causal_mask = mask_interface(
+        batch_size=batch_size,
+    ...<7 lines>...
+        config=config,  # Pass the config as well, in case someone wants to easily have their own mask_interface
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\transformers\masking_utils.py", line 392, in sdpa_mask_recent_torch
+    causal_mask = _vmap_for_bhqkv(mask_function)(batch_arange, head_arange, cache_position, kv_arange)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\apis.py", line 203, in wrapped
+    return vmap_impl(
+        func, in_dims, out_dims, randomness, chunk_size, *args, **kwargs
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\vmap.py", line 331, in vmap_impl
+    return _flat_vmap(
+        func,
+    ...<6 lines>...
+        **kwargs,
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\vmap.py", line 479, in _flat_vmap
+    batched_outputs = func(*batched_inputs, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\apis.py", line 203, in wrapped
+    return vmap_impl(
+        func, in_dims, out_dims, randomness, chunk_size, *args, **kwargs
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\vmap.py", line 331, in vmap_impl
+    return _flat_vmap(
+        func,
+    ...<6 lines>...
+        **kwargs,
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\vmap.py", line 479, in _flat_vmap
+    batched_outputs = func(*batched_inputs, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\apis.py", line 203, in wrapped
+    return vmap_impl(
+        func, in_dims, out_dims, randomness, chunk_size, *args, **kwargs
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\vmap.py", line 331, in vmap_impl
+    return _flat_vmap(
+        func,
+    ...<6 lines>...
+        **kwargs,
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\vmap.py", line 479, in _flat_vmap
+    batched_outputs = func(*batched_inputs, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\apis.py", line 203, in wrapped
+    return vmap_impl(
+        func, in_dims, out_dims, randomness, chunk_size, *args, **kwargs
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\vmap.py", line 331, in vmap_impl
+    return _flat_vmap(
+        func,
+    ...<6 lines>...
+        **kwargs,
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\vmap.py", line 479, in _flat_vmap
+    batched_outputs = func(*batched_inputs, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\transformers\masking_utils.py", line 54, in and_mask
+    result = result & mask(batch_idx, head_idx, q_idx, kv_idx).to(result.device)
+                      ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\transformers\masking_utils.py", line 142, in inner_mask
+    return padding_mask[batch_idx, kv_idx]
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_dynamo\_trace_wrapped_higher_order_op.py", line 141, in __torch_function__
+    return mod_index(args[0], index_args)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\autograd\function.py", line 585, in apply
+    return custom_function_call(cls, *args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 49, in __call__
+    return super().__call__(autograd_function, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 440, in __call__
+    return wrapper()
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_dynamo\eval_frame.py", line 745, in _fn
+    return fn(*args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 436, in wrapper
+    return self.dispatch(
+           ~~~~~~~~~~~~~^
+        dispatch_key_set.highestPriorityTypeId(), *args, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 305, in dispatch
+    return dispatch_functorch(self, args, kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\pyfunctorch.py", line 294, in dispatch_functorch
+    return interpreter.process(op, args, kwargs)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\pyfunctorch.py", line 130, in process
+    return kernel(self, *args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 300, in custom_function_call_vmap
+    return custom_function_call_vmap_generate_rule(
+        interpreter, autograd_function, *operands
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 376, in custom_function_call_vmap_generate_rule
+    output = custom_function_call(vmapped_function, *unwrapped_operands)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 49, in __call__
+    return super().__call__(autograd_function, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 440, in __call__
+    return wrapper()
 
-Để nén và nộp bài:
-  Compress-Archive -Path test_results.json -DestinationPath submission.zip
+[batch] Đang sinh câu trả lời cho batch 2 (2 câu)...
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_dynamo\eval_frame.py", line 745, in _fn
+    return fn(*args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 436, in wrapper
+    return self.dispatch(
+           ~~~~~~~~~~~~~^
+        dispatch_key_set.highestPriorityTypeId(), *args, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 305, in dispatch
+    return dispatch_functorch(self, args, kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\pyfunctorch.py", line 294, in dispatch_functorch
+    return interpreter.process(op, args, kwargs)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\pyfunctorch.py", line 130, in process
+    return kernel(self, *args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 300, in custom_function_call_vmap
+    return custom_function_call_vmap_generate_rule(
+        interpreter, autograd_function, *operands
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 376, in custom_function_call_vmap_generate_rule
+    output = custom_function_call(vmapped_function, *unwrapped_operands)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 49, in __call__
+    return super().__call__(autograd_function, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 440, in __call__
+    return wrapper()
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_dynamo\eval_frame.py", line 745, in _fn
+    return fn(*args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 436, in wrapper
+    return self.dispatch(
+           ~~~~~~~~~~~~~^
+        dispatch_key_set.highestPriorityTypeId(), *args, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 305, in dispatch
+    return dispatch_functorch(self, args, kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\pyfunctorch.py", line 294, in dispatch_functorch
+    return interpreter.process(op, args, kwargs)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\pyfunctorch.py", line 130, in process
+    return kernel(self, *args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 300, in custom_function_call_vmap
+    return custom_function_call_vmap_generate_rule(
+        interpreter, autograd_function, *operands
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 376, in custom_function_call_vmap_generate_rule
+    output = custom_function_call(vmapped_function, *unwrapped_operands)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 49, in __call__
+    return super().__call__(autograd_function, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 440, in __call__
+    return wrapper()
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_dynamo\eval_frame.py", line 745, in _fn
+    return fn(*args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 436, in wrapper
+    return self.dispatch(
+           ~~~~~~~~~~~~~^
+        dispatch_key_set.highestPriorityTypeId(), *args, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_ops.py", line 305, in dispatch
+    return dispatch_functorch(self, args, kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\pyfunctorch.py", line 294, in dispatch_functorch
+    return interpreter.process(op, args, kwargs)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\pyfunctorch.py", line 130, in process
+    return kernel(self, *args, **kwargs)
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 300, in custom_function_call_vmap
+    return custom_function_call_vmap_generate_rule(
+        interpreter, autograd_function, *operands
+    )
+  File "C:\Users\admin\miniconda3\Lib\site-packages\torch\_functorch\autograd_function.py", line 376, in custom_function_call_vmap_generate_rule

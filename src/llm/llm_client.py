@@ -97,11 +97,54 @@ class QwenGenerator:
             return
 
         import torch
-        from transformers import AutoTokenizer, AutoModelForCausalLM
-
         is_offline = os.environ.get("HF_HUB_OFFLINE") == "1"
 
-        print(f"[generator] Đang load model '{self.model_name}' (Offline={is_offline})...", flush=True)
+        # Check if we can use vllm
+        use_vllm = False
+        if torch.cuda.is_available():
+            try:
+                from vllm import LLM
+                use_vllm = True
+            except ImportError:
+                use_vllm = False
+
+        if use_vllm:
+            print(f"[generator] Loading model '{self.model_name}' with vLLM (Offline={is_offline})...", flush=True)
+            t0 = time.time()
+            try:
+                dtype = "bfloat16" if torch.cuda.is_bf16_supported() else "float16"
+                num_gpus = torch.cuda.device_count()
+                
+                # Check VRAM to set memory utilization
+                free_vram_gb = torch.cuda.mem_get_info()[0] / 1024**3
+                print(f"[generator] GPU free VRAM: {free_vram_gb:.1f} GB", flush=True)
+                
+                gpu_memory_utilization = 0.85
+                
+                from vllm import LLM
+                self._model = LLM(
+                    model=self.model_name,
+                    trust_remote_code=True,
+                    dtype=dtype,
+                    gpu_memory_utilization=gpu_memory_utilization,
+                    tensor_parallel_size=num_gpus if num_gpus > 0 else 1,
+                    enforce_eager=False
+                )
+                self._tokenizer = self._model.get_tokenizer()
+                self._tokenizer.padding_side = 'left'
+                if self._tokenizer.pad_token_id is None:
+                    self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
+                self._is_vllm = True
+                print(f"[generator] Model loaded with vLLM in {time.time() - t0:.1f}s", flush=True)
+                return
+            except Exception as e:
+                print(f"[generator] Failed to load model with vLLM: {e}. Falling back to transformers...", flush=True)
+
+        # Fallback to standard transformers
+        self._is_vllm = False
+        from transformers import AutoTokenizer, AutoModelForCausalLM
+
+        print(f"[generator] Loading model '{self.model_name}' with Transformers (Offline={is_offline})...", flush=True)
         t0 = time.time()
 
         try:
@@ -126,10 +169,24 @@ class QwenGenerator:
                 # Nếu ít hơn 2.5GB thì dùng CPU hẳn load và disk offloading
                 use_gpu = free_vram_gb >= 2.5
 
+            max_memory = None
             if use_gpu:
                 dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
                 device_map = "auto"
-                print(f"[generator] Chế độ: GPU (dtype={dtype}, device_map=auto)", flush=True)
+                
+                # Cấu hình max_memory cho đa GPU (Kaggle T4 x 2) để tránh GPU 0 bị quá tải KV cache
+                num_gpus = torch.cuda.device_count()
+                if num_gpus > 1:
+                    max_memory = {}
+                    for gpu_id in range(num_gpus):
+                        if gpu_id == 0:
+                            max_memory[gpu_id] = "9GiB"  # Giới hạn GPU 0 ở 9GB, dành 5GB+ cho KV cache
+                        else:
+                            max_memory[gpu_id] = "13GiB" # GPU 1 chứa phần còn lại
+                    max_memory["cpu"] = "32GiB"
+                    print(f"[generator] Chế độ: GPU đa card (dtype={dtype}, device_map=auto, max_memory={max_memory})", flush=True)
+                else:
+                    print(f"[generator] Chế độ: GPU đơn (dtype={dtype}, device_map=auto)", flush=True)
             else:
                 dtype = torch.float32
                 device_map = "cpu"
@@ -141,6 +198,7 @@ class QwenGenerator:
                 self.model_name,
                 torch_dtype=dtype,
                 device_map=device_map,
+                max_memory=max_memory,
                 trust_remote_code=True,
                 local_files_only=is_offline,
                 attn_implementation="sdpa" if use_gpu else "eager",  # sdpa không tương thích CPU tốt
@@ -240,6 +298,17 @@ class QwenGenerator:
                 tokenize=False,
                 add_generation_prompt=True,
             )
+
+        if getattr(self, '_is_vllm', False):
+            from vllm import SamplingParams
+            sampling_params = SamplingParams(
+                max_tokens=max_new_tokens,
+                temperature=0.0,
+                repetition_penalty=1.1,
+            )
+            outputs = self._model.generate([prompt], sampling_params, use_tqdm=False)
+            response = outputs[0].outputs[0].text
+            return response.strip()
 
         inputs = self._tokenizer([prompt], return_tensors="pt").to(self._model.device)
 
@@ -348,6 +417,17 @@ class QwenGenerator:
                     add_generation_prompt=True,
                 )
             prompts.append(prompt)
+
+        if getattr(self, '_is_vllm', False):
+            from vllm import SamplingParams
+            sampling_params = SamplingParams(
+                max_tokens=max_new_tokens,
+                temperature=0.0,
+                repetition_penalty=1.1,
+            )
+            outputs = self._model.generate(prompts, sampling_params, use_tqdm=False)
+            responses = [out.outputs[0].text.strip() for out in outputs]
+            return responses
 
         inputs = self._tokenizer(prompts, return_tensors="pt", padding=True).to(self._model.device)
 

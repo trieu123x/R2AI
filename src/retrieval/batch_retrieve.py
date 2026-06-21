@@ -22,11 +22,6 @@ import argparse
 if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
-
-
-
-
-
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -193,6 +188,8 @@ def main():
                         help="Kích hoạt mô hình sinh câu trả lời tự động")
     parser.add_argument("--llm-model", default="Qwen/Qwen3-8B-Instruct",
                         help="Tên mô hình LLM trên HuggingFace (mặc định: Qwen/Qwen3-8B-Instruct)")
+    parser.add_argument("--batch-size", type=int, default=3,
+                        help="Kích thước batch khi sinh câu trả lời LLM (mặc định: 3)")
     args = parser.parse_args()
 
     # Load câu hỏi
@@ -287,7 +284,7 @@ def main():
         # lazy load model lúc này sẽ có toàn bộ VRAM
         generator._lazy_load()
         
-        batch_size = 5
+        batch_size = args.batch_size
         for i in range(0, len(retrieved_data), batch_size):
             batch_data = retrieved_data[i:i+batch_size]
             
