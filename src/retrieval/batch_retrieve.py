@@ -190,6 +190,8 @@ def main():
                         help="Tên mô hình LLM trên HuggingFace (mặc định: Qwen/Qwen3-8B-Instruct)")
     parser.add_argument("--batch-size", type=int, default=3,
                         help="Kích thước batch khi sinh câu trả lời LLM (mặc định: 3)")
+    parser.add_argument("--cache-file", default="stage1_cache.json",
+                        help="File lưu cache kết quả Giai đoạn 1 (mặc định: stage1_cache.json)")
     args = parser.parse_args()
 
     # Load câu hỏi
@@ -230,33 +232,73 @@ def main():
         )
         print("[batch] Backend: LOCAL (SQLite)")
 
+    import dataclasses
+    from src.retrieval.retriever import RetrievalResult
+
     # 1. Giai đoạn 1: Truy xuất tài liệu cho tất cả các câu hỏi
     print("[batch] === GIAI ĐOẠN 1: TRUY XUẤT TÀI LIỆU (RETRIEVAL) ===")
     retrieved_data = []
     
-    for idx, q in enumerate(questions, start=1):
-        qid = q.get("id", idx)
-        question = q.get("question", "")
-
-        if not question.strip():
-            print(f"  [{idx:3d}/{len(questions)}] id={qid} ⚠ Câu hỏi rỗng, bỏ qua.")
-            continue
-
-        t0 = time.time()
+    if args.cache_file and os.path.exists(args.cache_file):
+        print(f"[batch] Tìm thấy file cache '{args.cache_file}'. Đang nạp dữ liệu bỏ qua Giai đoạn 1...")
         try:
-            results = retriever.retrieve(
-                question, 
-                mode=args.mode, 
-                top_k=args.top_k, 
-                rerank=args.rerank
-            )
-            elapsed = time.time() - t0
-            retrieved_data.append((qid, question, results, elapsed))
-            print(f"  [{idx:3d}/{len(questions)}] id={qid} | Reranked/Retrieved | {elapsed:.2f}s")
+            with open(args.cache_file, "r", encoding="utf-8") as f:
+                cached_list = json.load(f)
+            for item in cached_list:
+                qid = item["qid"]
+                question = item["question"]
+                results_dicts = item["results"]
+                elapsed = item["elapsed"]
+                results = [RetrievalResult(**r) for r in results_dicts]
+                retrieved_data.append((qid, question, results, elapsed))
+            print(f"[batch] ✓ Đã nạp {len(retrieved_data)} câu hỏi từ cache thành công.")
         except Exception as e:
-            elapsed = time.time() - t0
-            print(f"  [{idx:3d}/{len(questions)}] id={qid} ✗ LỖI RETRIEVAL: {e} ({elapsed:.2f}s)", flush=True)
-            retrieved_data.append((qid, question, [], elapsed))
+            print(f"[batch] ✗ Lỗi nạp file cache: {e}. Sẽ chạy lại truy xuất từ đầu.")
+            retrieved_data = []
+
+    if not retrieved_data:
+        for idx, q in enumerate(questions, start=1):
+            qid = q.get("id", idx)
+            question = q.get("question", "")
+
+            if not question.strip():
+                print(f"  [{idx:3d}/{len(questions)}] id={qid} ⚠ Câu hỏi rỗng, bỏ qua.")
+                continue
+
+            t0 = time.time()
+            try:
+                results = retriever.retrieve(
+                    question, 
+                    mode=args.mode, 
+                    top_k=args.top_k, 
+                    rerank=args.rerank
+                )
+                elapsed = time.time() - t0
+                retrieved_data.append((qid, question, results, elapsed))
+                print(f"  [{idx:3d}/{len(questions)}] id={qid} | Reranked/Retrieved | {elapsed:.2f}s")
+            except Exception as e:
+                elapsed = time.time() - t0
+                print(f"  [{idx:3d}/{len(questions)}] id={qid} ✗ LỖI RETRIEVAL: {e} ({elapsed:.2f}s)", flush=True)
+                retrieved_data.append((qid, question, [], elapsed))
+                
+        # Lưu Cache ngay khi xong
+        if args.cache_file:
+            print(f"\n[batch] Đang lưu cache Giai đoạn 1 ra '{args.cache_file}'...")
+            try:
+                cached_list = []
+                for qid, question, results, elapsed in retrieved_data:
+                    results_dicts = [dataclasses.asdict(r) for r in results]
+                    cached_list.append({
+                        "qid": qid,
+                        "question": question,
+                        "results": results_dicts,
+                        "elapsed": elapsed
+                    })
+                with open(args.cache_file, "w", encoding="utf-8") as f:
+                    json.dump(cached_list, f, ensure_ascii=False, indent=2)
+                print(f"[batch] ✓ Đã lưu cache thành công.")
+            except Exception as e:
+                print(f"[batch] ✗ Lỗi lưu file cache: {e}")
 
     # Giải phóng hoàn toàn Retriever và các model nhúng, reranker trên GPU
     print("\n[batch] Giải phóng retriever và giải phóng GPU memory...")

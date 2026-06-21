@@ -98,6 +98,10 @@ class QwenGenerator:
 
         import torch
         is_offline = os.environ.get("HF_HUB_OFFLINE") == "1"
+        
+        # Tắt FlashInfer Sampler và ép dùng XFORMERS để tránh lỗi build C++ trên Kaggle T4
+        os.environ["VLLM_USE_FLASHINFER_SAMPLER"] = "0"
+        os.environ["VLLM_ATTENTION_BACKEND"] = "XFORMERS"
 
         # Check if we can use vllm
         use_vllm = False
