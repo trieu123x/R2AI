@@ -1,5 +1,74 @@
 # R2AI — Legal RAG Assistant (Vietnamese)
 
+Hệ thống RAG (Retrieval-Augmented Generation) dành cho văn bản pháp lý tiếng Việt, phục vụ cuộc thi **R2AI 2026**.  
+Sử dụng **SQLite + FTS5** (offline) kết hợp **Supabase PostgreSQL + pgvector** (online) để tra cứu văn bản pháp luật theo hybrid search (BM25 + vector).
+
+---
+
+## 📁 Cấu trúc thư mục
+
+```
+R2AI/
+│
+├── .env                          # Biến môi trường (Supabase URL, DB URL, keys)
+│
+├── config/
+│   └── config.py                 # Đọc .env, cung cấp class Config cho toàn project
+│
+├── src/                          # Xử lý dữ liệu thô → chunks
+│   ├── legal_chunker.py          # Module chunking văn bản pháp lý (core logic)
+│   ├── process_chunks.py         # Script chính: lọc, chunk, lưu vào local SQLite
+│   └── test_chunking.py          # Kiểm tra chất lượng chunking trên ~5 docs mẫu
+│
+├── database/                     # Tạo embeddings + đồng bộ lên Supabase
+│   ├── schema.sql                # Schema Supabase (documents + document_chunks)
+│   ├── generate_local_embeddings_mp.py   # Sinh embeddings bằng CPU (multiprocessing)
+│   └── push_chunks_to_supabase.py        # Upload chunks + embeddings lên Supabase
+│
+├── retrieval/                    # Pipeline truy vấn
+│   ├── local_retriever.py        # Retriever offline dùng SQLite + FTS5 + vector
+│   ├── retriever.py              # Retriever online dùng Supabase PostgreSQL
+│   ├── batch_retrieve.py         # Truy vấn hàng loạt câu hỏi từ file JSON
+│   ├── setup_fts5.py             # Tạo FTS5 virtual table trong SQLite
+│   └── test_retrieval.py         # CLI tương tác test retrieval (không cần LLM)
+│
+├── logs/                         # Output, báo cáo sinh ra khi chạy scripts
+├── data/                         # Dữ liệu thô (data/raw) và đã xử lý (data/processed)
+└── vietnamese-legal-documents/   # Dataset gốc (parquet) — không commit lên git
+    ├── metadata/                 # Metadata các văn bản pháp lý
+    └── content/                  # Nội dung full-text các văn bản
+```
+
+---
+
+## ⚙️ Cài đặt môi trường
+
+### 1. Tạo và kích hoạt môi trường ảo (.venv)
+
+Nên đặt tên thư mục môi trường ảo là `.venv` (tránh đặt tên trùng với file `.env` cấu hình để không bị ghi đè/nhầm lẫn).
+
+* **Bước A: Tạo môi trường ảo**
+  ```bash
+  python -m venv .venv
+  ```
+
+* **Bước B: Kích hoạt môi trường ảo**
+  * **Dành cho Command Prompt (CMD):**
+    ```cmd
+    .venv\Scripts\activate.bat
+    ```
+  * **Dành cho PowerShell:**
+    ```powershell
+    .venv\Scripts\Activate.ps1
+    ```
+    *Lưu ý:* Nếu gặp lỗi bảo mật (Execution Policy) trên PowerShell, chạy lệnh sau trước khi kích hoạt:
+    ```powershell
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+    ```
+
+### 2. Cài đặt các thư viện (Python packages)
+
+Sau khi đã kích hoạt môi trường ảo (bạn sẽ thấy `(.venv)` xuất hiện ở đầu dòng lệnh), tiến hành cài đặt các package:
 Hệ thống RAG (Retrieval-Augmented Generation) chuyên sâu dành cho văn bản pháp lý tiếng Việt. Hệ thống được thiết kế để chống lại các lỗi rủi ro của AI (hallucination) nhờ cơ chế kiểm duyệt chặt chẽ, kết hợp tìm kiếm đa mô thức (Hybrid Search: BM25 + Vector) và chấm điểm lại (Reranking).
 
 ---
@@ -14,6 +83,9 @@ pip install -r requirements.txt
 ```
 *(Hoặc cài thủ công: `pip install sentence-transformers pandas pyarrow psycopg2-binary python-dotenv numpy pyvi faiss-cpu torch transformers accelerate`)*
 
+### 3. Cấu hình `.env`
+
+Tạo file `.env` tại root (đã có sẵn, chỉ cần cập nhật nếu đổi project Supabase):
 ### 2. Cấu hình biến môi trường (`.env`)
 Tạo file `.env` tại thư mục gốc (nếu dùng cơ sở dữ liệu Supabase online). Nếu chỉ chạy local SQLite thì không bắt buộc, nhưng khuyến nghị:
 

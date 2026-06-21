@@ -4,12 +4,11 @@ from typing import Optional
 
 class PipelineGenerator:
     """
-    Step 8: Qwen3-8B
+    Step 8: Qwen3-8B (vLLM optimized)
     Sinh câu trả lời dựa trên query đã xử lý và context đã được nén.
     """
     def __init__(self, model_name: str = "Qwen/Qwen3-8B-Instruct"):
         self.model_name = model_name
-        self._tokenizer = None
         self._model = None
 
     def _lazy_load(self):
@@ -17,31 +16,23 @@ class PipelineGenerator:
             return
 
         import torch
-        from transformers import AutoTokenizer, AutoModelForCausalLM
+        from vllm import LLM
 
         is_offline = os.environ.get("HF_HUB_OFFLINE") == "1"
 
-        print(f"[generator] Loading model '{self.model_name}' (Offline={is_offline})...", flush=True)
+        print(f"[generator] Loading model '{self.model_name}' with vLLM (Offline={is_offline})...", flush=True)
         t0 = time.time()
 
         try:
-            self._tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name,
+            cc_major = torch.cuda.get_device_capability()[0] if torch.cuda.is_available() else 0
+            dtype = "bfloat16" if cc_major >= 8 else "float16"
+
+            self._model = LLM(
+                model=self.model_name,
                 trust_remote_code=True,
-                local_files_only=is_offline
-            )
-
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
-
-            print(f"[generator] Device={device}, Dtype={dtype}...", flush=True)
-
-            self._model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                torch_dtype=dtype,
-                device_map="auto",
-                trust_remote_code=True,
-                local_files_only=is_offline
+                dtype=dtype,
+                gpu_memory_utilization=0.4,
+                enforce_eager=False
             )
             print(f"[generator] Model loaded in {time.time() - t0:.1f}s", flush=True)
         except Exception as e:
@@ -51,12 +42,15 @@ class PipelineGenerator:
     def generate_direct(self, prompt: str, max_new_tokens: int = 1024) -> str:
         """Sinh kết quả trực tiếp từ prompt (dùng cho Rewrite)."""
         self._lazy_load()
+        from vllm import SamplingParams
+        
         messages = [{"role": "user", "content": prompt}]
-        chat_prompt = self._tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        inputs = self._tokenizer([chat_prompt], return_tensors="pt").to(self._model.device)
-        outputs = self._model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
-        generated_ids = [output_ids[len(input_ids):] for input_ids, output_ids in zip(inputs.input_ids, outputs)]
-        return self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+        tokenizer = self._model.get_tokenizer()
+        chat_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        
+        sampling_params = SamplingParams(max_tokens=max_new_tokens, temperature=0.0)
+        outputs = self._model.generate([chat_prompt], sampling_params, use_tqdm=False)
+        return outputs[0].outputs[0].text.strip()
 
     def generate_answer(self, query: str, context: str, warning_msg: Optional[str] = None, max_new_tokens: int = 1024) -> str:
         """Sinh câu trả lời cuối cùng dựa trên context."""
@@ -64,7 +58,7 @@ class PipelineGenerator:
             return "Không tìm thấy tài liệu luật pháp liên quan để làm căn cứ trả lời."
 
         self._lazy_load()
-
+        from vllm import SamplingParams
         from src.prompts.prompt_templates import SYSTEM_PROMPT, USER_CONTENT_TEMPLATE
 
         system_prompt = SYSTEM_PROMPT
@@ -81,26 +75,19 @@ class PipelineGenerator:
             {"role": "user", "content": user_content}
         ]
 
-        prompt = self._tokenizer.apply_chat_template(
+        tokenizer = self._model.get_tokenizer()
+        prompt = tokenizer.apply_chat_template(
             messages,
             tokenize=False,
             add_generation_prompt=True
         )
 
-        inputs = self._tokenizer([prompt], return_tensors="pt").to(self._model.device)
-
-        outputs = self._model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            do_sample=True,
+        sampling_params = SamplingParams(
+            max_tokens=max_new_tokens,
             temperature=0.1,
-            repetition_penalty=1.15,
-            pad_token_id=self._tokenizer.eos_token_id
+            repetition_penalty=1.15
         )
-
-        generated_ids = [
-            output_ids[len(input_ids):] for input_ids, output_ids in zip(inputs.input_ids, outputs)
-        ]
         
-        response = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        outputs = self._model.generate([prompt], sampling_params, use_tqdm=False)
+        response = outputs[0].outputs[0].text
         return response.strip()

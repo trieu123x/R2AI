@@ -1,5 +1,5 @@
 """
-local_retriever.py
+retriever.py
 ==================
 Retriever chạy hoàn toàn LOCAL trên SQLite (local_chunks.db).
 Không cần kết nối Supabase/internet.
@@ -829,7 +829,7 @@ class LegalRetriever:
     def hybrid_search(self, query: str, top_k: Optional[int] = None) -> List[RetrievalResult]:
         """Kết hợp FTS + vector bằng Reciprocal Rank Fusion."""
         k = top_k or self.top_k
-        fetch_k = k * 3
+        fetch_k = k * 5
 
         fts_results    = self.fts_search(query,    top_k=fetch_k)
         vector_results = self.vector_search(query, top_k=fetch_k)
@@ -1166,7 +1166,7 @@ class LegalRetriever:
 
         # 4. Áp dụng Absolute & Relative Score Thresholds (Dynamic Thresholding)
         if results:
-            RERANK_THRESHOLD = 0.40
+            RERANK_THRESHOLD = 0.35
             best_score = results[0].score
             
             relative_threshold_ratio = 0.65
@@ -1175,16 +1175,19 @@ class LegalRetriever:
             if len(results) > 1:
                 score_1 = results[0].score
                 score_2 = results[1].score
-                if (score_1 - score_2) > 0.15:
-                    relative_threshold_ratio = 0.8
-                elif score_1 > 0.9:
-                    relative_threshold_ratio = 0.75
+                if (score_1 - score_2) > 0.25:
+                    relative_threshold_ratio = 0.85
             
             filtered_by_score = []
             for r in results:
                 # Giữ chunk nếu thỏa mãn ngưỡng tuyệt đối và ngưỡng tương đối động
                 if r.score >= RERANK_THRESHOLD and r.score >= best_score * relative_threshold_ratio:
                     filtered_by_score.append(r)
+            
+            # Fallback: Nếu lọc quá ngặt nghèo xóa sạch kết quả, giữ lại ít nhất 2 kết quả tốt nhất ban đầu
+            if not filtered_by_score and results:
+                filtered_by_score = results[:2]
+                
             results = filtered_by_score
 
         # 5. Article-level Dedup (Giảm context thừa)
@@ -1208,11 +1211,34 @@ class LegalRetriever:
         except Exception:
             important_terms = [w.lower() for w in query.split() if len(w) > 2]
             
+        # Tách nhỏ các từ ghép thành từng âm tiết để tránh lỗi phân tách từ (word segmentation) lệch nhau giữa các bộ tokenizer
+        single_syllables = set()
+        for term in important_terms:
+            for part in term.split():
+                if len(part) > 1:
+                    single_syllables.add(part)
+                    
+        # Loại bỏ các từ dừng pháp lý quá phổ biến để tăng độ chính xác của bộ lọc từ khóa cốt lõi
+        legal_stop_words = {
+            "luật", "điều", "khoản", "nghị", "định", "thông", "tư", "quy", "định", "pháp", 
+            "hành", "vi", "thực", "hiện", "trong", "ngoài", "theo", "được", "bị", "của", "cho", 
+            "và", "các", "những", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín", "mười"
+        }
+        filtered_syllables = [s for s in single_syllables if s not in legal_stop_words]
+        if not filtered_syllables:
+            # Fallback nếu bộ lọc âm tiết trống rỗng
+            filtered_syllables = list(single_syllables)
+            
         filtered_final = []
         for r in results:
+            # Nguyên tắc 1: Nếu điểm Rerank đã rất cao (>= 0.45), giữ lại ngay lập tức không cần lọc từ khóa
+            if r.score >= 0.45:
+                filtered_final.append(r)
+                continue
+                
+            # Nguyên tắc 2: Đối với kết quả điểm thấp hơn, bắt buộc phải khớp ít nhất một âm tiết cốt lõi của câu hỏi
             content_lower = r.content.lower()
-            # Chunk phải chứa ít nhất một term quan trọng (intent keywords) từ câu hỏi
-            if any(term in content_lower for term in important_terms):
+            if any(syl in content_lower for syl in filtered_syllables):
                 filtered_final.append(r)
                 
         # Fallback nếu filter quá ngặt nghèo drop hết tất cả kết quả

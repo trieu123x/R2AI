@@ -19,6 +19,28 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from src.retrieval.retriever import RetrievalResult
 
+# ── System Prompt dùng chung cho cả single và batch generation ────────────────
+_SYSTEM_PROMPT = (
+    "Bạn là một trợ lý pháp lý Việt Nam chuyên nghiệp, chính xác và đáng tin cậy.\n\n"
+    "Nhiệm vụ của bạn:\n"
+    "- Trả lời câu hỏi dựa trên CÁC CĂN CỨ PHÁP LÝ ĐƯỢC CUNG CẤP. Tuyệt đối không tự suy diễn hoặc giả định các nội dung không có trong tài liệu.\n"
+    "- Hãy viết hoàn toàn bằng tiếng Việt chuẩn mực. Tuyệt đối KHÔNG trộn lẫn tiếng Trung (chữ Hán), tiếng Anh hoặc bất kỳ từ ngữ nước ngoài nào khác.\n"
+    "- Tuyệt đối KHÔNG được tự bịa ra các số hiệu văn bản, điều luật không có trong các căn cứ pháp lý.\n"
+    "- Tuyệt đối KHÔNG sử dụng các ký tự thay thế hoặc giữ chỗ như [X], [Y], [Z]. "
+    "Nếu tài liệu không nêu rõ số điều/khoản, hãy trích dẫn bằng nội dung chữ hoặc ghi 'Theo quy định của pháp luật hiện hành'.\n"
+    "- Hãy tổng hợp thông tin ngắn gọn, súc tích. Không lặp lại cùng một ý ở các mục khác nhau.\n"
+    "- Chỉ trích dẫn thông tin trả lời trực tiếp cho câu hỏi. Không đưa thông tin của đối tượng khác vào nếu câu hỏi hỏi về chủ thể cụ thể.\n"
+    "- Tuyệt đối KHÔNG sử dụng tên văn bản, điều luật hoặc các từ ngữ trong Ví dụ mẫu (Few-shot) để trả lời cho câu hỏi thực tế.\n"
+    "- Cực kỳ cẩn thận với các từ phủ định hoặc hành vi cấm: 'nghiêm cấm', 'không được', 'xử phạt đối với hành vi' có nghĩa là hành vi đó BỊ CẤM.\n"
+    "- Không chỉ nêu tên văn bản chung chung. Hãy giải thích cụ thể nội dung quyền lợi, nghĩa vụ, ưu đãi hoặc mức phạt.\n"
+    "- Khi câu hỏi hỏi về xử phạt, BẮT BUỘC phải nêu cả biện pháp khắc phục hậu quả (nếu có trong tài liệu).\n\n"
+    "Bạn BẮT BUỘC phải trình bày câu trả lời nghiêm ngặt theo cấu trúc 4 phần sau:\n"
+    "1. Trả lời trực tiếp: Trả lời trực tiếp vào câu hỏi, nêu rõ kết luận chính hoặc hành vi và hệ quả.\n"
+    "2. Phân tích chi tiết: Diễn giải chi tiết nội dung quy định, mức phạt bằng tiền cụ thể, quyền lợi/nghĩa vụ chi tiết, biện pháp khắc phục hậu quả (nếu có).\n"
+    "3. Căn cứ pháp lý: Liệt kê chi tiết các điều khoản cụ thể từ tài liệu tham khảo (Ví dụ: 'Điều 17 Bộ luật Lao động 2019', 'Khoản 1 Điều 8 Nghị định 28/2020/NĐ-CP').\n"
+    "4. Hạn chế của dữ liệu (nếu có): Nêu rõ nếu các căn cứ pháp lý thiếu thông tin để trả lời đầy đủ một khía cạnh nào đó của câu hỏi."
+)
+
 def extract_evidence(content: str, article_hint: Optional[str]) -> str:
     """Trích xuất duy nhất phần Điều luật liên quan từ chunk nội dung để tránh nhiễu."""
     header = ""
@@ -75,11 +97,55 @@ class QwenGenerator:
             return
 
         import torch
-        from transformers import AutoTokenizer, AutoModelForCausalLM
-
         is_offline = os.environ.get("HF_HUB_OFFLINE") == "1"
 
-        print(f"[generator] Đang load model '{self.model_name}' (Offline={is_offline})...", flush=True)
+        # Check if we can use vllm
+        use_vllm = False
+        if torch.cuda.is_available():
+            try:
+                from vllm import LLM
+                use_vllm = True
+            except ImportError:
+                use_vllm = False
+
+        if use_vllm:
+            print(f"[generator] Loading model '{self.model_name}' with vLLM (Offline={is_offline})...", flush=True)
+            t0 = time.time()
+            try:
+                cc_major = torch.cuda.get_device_capability()[0]
+                dtype = "bfloat16" if cc_major >= 8 else "float16"
+                num_gpus = torch.cuda.device_count()
+                
+                # Check VRAM to set memory utilization
+                free_vram_gb = torch.cuda.mem_get_info()[0] / 1024**3
+                print(f"[generator] GPU free VRAM: {free_vram_gb:.1f} GB", flush=True)
+                
+                gpu_memory_utilization = 0.85
+                
+                from vllm import LLM
+                self._model = LLM(
+                    model=self.model_name,
+                    trust_remote_code=True,
+                    dtype=dtype,
+                    gpu_memory_utilization=gpu_memory_utilization,
+                    tensor_parallel_size=num_gpus if num_gpus > 0 else 1,
+                    enforce_eager=False
+                )
+                self._tokenizer = self._model.get_tokenizer()
+                self._tokenizer.padding_side = 'left'
+                if self._tokenizer.pad_token_id is None:
+                    self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
+                self._is_vllm = True
+                print(f"[generator] Model loaded with vLLM in {time.time() - t0:.1f}s", flush=True)
+                return
+            except Exception as e:
+                print(f"[generator] Failed to load model with vLLM: {e}. Falling back to transformers...", flush=True)
+
+        # Fallback to standard transformers
+        self._is_vllm = False
+        from transformers import AutoTokenizer, AutoModelForCausalLM
+
+        print(f"[generator] Loading model '{self.model_name}' with Transformers (Offline={is_offline})...", flush=True)
         t0 = time.time()
 
         try:
@@ -95,25 +161,56 @@ class QwenGenerator:
             if self._tokenizer.pad_token_id is None:
                 self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
 
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
+            # Kiểm tra VRAM khả dụng — tránh để accelerate offload xuống disk
+            use_gpu = False
+            if torch.cuda.is_available():
+                free_vram_gb = torch.cuda.mem_get_info()[0] / 1024**3
+                print(f"[generator] GPU free VRAM: {free_vram_gb:.1f} GB", flush=True)
+                # Qwen2.5-1.5B cần ~3GB, Qwen3-8B cần ~16GB (float16)
+                # Nếu ít hơn 2.5GB thì dùng CPU hẳn load và disk offloading
+                use_gpu = free_vram_gb >= 2.5
 
-            print(f"[generator] Thiết lập mô hình chạy trên dtype={dtype}...", flush=True)
+            max_memory = None
+            if use_gpu:
+                cc_major = torch.cuda.get_device_capability()[0]
+                dtype = torch.bfloat16 if cc_major >= 8 else torch.float16
+                device_map = "auto"
+                
+                # Cấu hình max_memory cho đa GPU (Kaggle T4 x 2) để tránh GPU 0 bị quá tải KV cache
+                num_gpus = torch.cuda.device_count()
+                if num_gpus > 1:
+                    max_memory = {}
+                    for gpu_id in range(num_gpus):
+                        if gpu_id == 0:
+                            max_memory[gpu_id] = "9GiB"  # Giới hạn GPU 0 ở 9GB, dành 5GB+ cho KV cache
+                        else:
+                            max_memory[gpu_id] = "13GiB" # GPU 1 chứa phần còn lại
+                    max_memory["cpu"] = "32GiB"
+                    print(f"[generator] Chế độ: GPU đa card (dtype={dtype}, device_map=auto, max_memory={max_memory})", flush=True)
+                else:
+                    print(f"[generator] Chế độ: GPU đơn (dtype={dtype}, device_map=auto)", flush=True)
+            else:
+                dtype = torch.float32
+                device_map = "cpu"
+                print(f"[generator] Chế độ: CPU (float32) — sẽ chậm hơn nhưng tránh disk offloading", flush=True)
+
+            self._device = "cuda" if use_gpu else "cpu"
 
             self._model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
                 torch_dtype=dtype,
-                device_map="auto",
+                device_map=device_map,
+                max_memory=max_memory,
                 trust_remote_code=True,
                 local_files_only=is_offline,
-                attn_implementation="sdpa"
+                attn_implementation="sdpa" if use_gpu else "eager",  # sdpa không tương thích CPU tốt
             )
             print(f"[generator] Model loaded in {time.time() - t0:.1f}s", flush=True)
         except Exception as e:
             print(f"[generator] Failed to load model: {e}")
             raise
 
-    def generate_answer(self, query: str, results: List[RetrievalResult], max_new_tokens: int = 1024, warning_msg: Optional[str] = None) -> str:
+    def generate_answer(self, query: str, results: List[RetrievalResult], max_new_tokens: int = 1028, warning_msg: Optional[str] = None) -> str:
         """
         Sinh câu trả lời dựa trên câu hỏi và các tài liệu luật pháp đã truy xuất.
         """
@@ -146,24 +243,7 @@ class QwenGenerator:
         context = "\n\n=========================================\n\n".join(context_parts)
 
         # Hệ thống Prompt hướng dẫn cực kỳ rõ ràng cho Qwen
-        system_prompt = (
-            "Bạn là một trợ lý pháp lý Việt Nam chuyên nghiệp, chính xác và đáng tin cậy.\n\n"
-            "Nhiệm vụ của bạn:\n"
-            "- Trả lời câu hỏi dựa trên CÁC CĂN CỨ PHÁP LÝ ĐƯỢC CUNG CẤP. Tuyệt đối không tự suy diễn hoặc giả định các nội dung không có trong tài liệu.\n"
-            "- Hãy viết hoàn toàn bằng tiếng Việt chuẩn mực. Tuyệt đối KHÔNG trộn lẫn tiếng Trung (chữ Hán), tiếng Anh hoặc bất kỳ từ ngữ nước ngoài nào khác.\n"
-            "- Tuyệt đối KHÔNG được tự bịa ra các số hiệu văn bản, điều luật không có trong các căn cứ pháp lý.\n"
-            "- Tuyệt đối không sử dụng các ký tự thay thế hoặc giữ chỗ như [X], [Y], [Z], [Nghị định số...]. Nếu tài liệu không nêu rõ số điều/khoản/năm, chỉ trích dẫn nội dung chữ hoặc ghi rõ 'Theo quy định của pháp luật hiện hành'.\n"
-            "- Hãy tổng hợp thông tin một cách ngắn gọn, súc tích. Không lặp lại cùng một ý, cùng một câu ở các mục khác nhau trong câu trả lời.\n"
-            "- Chỉ trích dẫn các thông tin trả lời trực tiếp cho câu hỏi. Không đưa các thông tin của đối tượng khác (ví dụ: doanh nghiệp công nghiệp hỗ trợ) vào câu trả lời nếu câu hỏi đang hỏi về cơ sở ươm tạo.\n"
-            "- Tuyệt đối KHÔNG sử dụng tên văn bản, điều luật hoặc các từ ngữ trong Ví dụ mẫu (Few-shot) như 'quyền công đoàn', 'thành lập công đoàn' để trả lời cho câu hỏi thực tế.\n"
-            "- Cực kỳ cẩn thận với các từ phủ định hoặc hành vi cấm: các cụm từ như 'nghiêm cấm', 'không được', 'xử phạt đối với hành vi' có nghĩa là hành vi đó BỊ CẤM, tuyệt đối không được viết thành 'người sử dụng lao động được phép thực hiện'.\n"
-            "- Không chỉ nêu tên văn bản chung chung. Hãy giải thích cụ thể nội dung quyền lợi, nghĩa vụ, ưu đãi hoặc mức phạt được quy định.\n\n"
-            "Bạn BẮT BUỘC phải trình bày câu trả lời của mình nghiêm ngặt theo cấu trúc 4 phần sau (sử dụng chính xác các tiêu đề này làm tiêu đề dòng):\n"
-            "1. Trả lời trực tiếp: Trả lời trực tiếp vào câu hỏi, nêu rõ kết luận chính hoặc hành vi và hệ quả.\n"
-            "2. Phân tích chi tiết: Diễn giải chi tiết nội dung quy định, mức phạt bằng tiền cụ thể, quyền lợi/nghĩa vụ chi tiết được quy định trong các tài liệu tham khảo.\n"
-            "3. Căn cứ pháp lý: Liệt kê chi tiết các điều khoản, điều luật cụ thể được sử dụng làm căn cứ từ tài liệu tham khảo (Ví dụ: 'Điều 17 Bộ luật Lao động 2019', 'Điều 15 Nghị định 12/2022/NĐ-CP').\n"
-            "4. Hạn chế của dữ liệu (nếu có): Nêu rõ nếu các căn cứ pháp lý được cung cấp thiếu thông tin hoặc không đủ cơ sở để trả lời đầy đủ một khía cạnh nào đó của câu hỏi."
-        )
+        system_prompt = _SYSTEM_PROMPT
 
         user_content = (
             f"TÀI LIỆU THAM KHẢO CUNG CẤP:\n"
@@ -177,38 +257,60 @@ class QwenGenerator:
 
         messages = [
             {"role": "system", "content": system_prompt},
-            # Few-shot example
+            # Few-shot example — dùng số điều thật, KHÔNG dùng placeholder [X][Y][Z]
             {"role": "user", "content": (
                 "TÀI LIỆU THAM KHẢO CUNG CẤP:\n"
                 "=========================================\n"
                 "[Căn cứ 1]\n"
                 "Độ liên quan: 0.9876\n"
-                "Văn bản: Nghị định [Z] năm 2022 về xử phạt hành chính\n"
-                "Điều: Điều [X]\n"
+                "Văn bản: Nghị định số 12/2022/NĐ-CP quy định xử phạt vi phạm hành chính trong lĩnh vực lao động\n"
+                "Điều: Điều 34\n"
                 "Nội dung:\n"
-                "Phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng đối với hành vi cản trở người lao động thành lập công đoàn.\n"
+                "Điều 34. Vi phạm về quyền thành lập, gia nhập và hoạt động công đoàn của người lao động\n"
+                "1. Phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng đối với hành vi cản trở người lao động thành lập, gia nhập và hoạt động công đoàn.\n"
+                "2. Biện pháp khắc phục hậu quả: Buộc người sử dụng lao động thu hồi quyết định, chấm dứt hành vi cản trở và đảm bảo quyền thành lập công đoàn của người lao động.\n"
                 "=========================================\n\n"
-                "CÂU HỎI: Hành vi cản trở người lao động thành lập công đoàn bị phạt bao nhiêu tiền?\n\n"
+                "CÂU HỎI: Hành vi cản trở người lao động thành lập công đoàn bị phạt bao nhiêu tiền và phải khắc phục ra sao?\n\n"
                 "Yêu cầu trả lời: Hãy phân tích kỹ tài liệu tham khảo trên và trả lời câu hỏi tuân thủ đúng cấu trúc 4 phần nêu trên."
             )},
             {"role": "assistant", "content": (
-                "1. Trả lời trực tiếp: Hành vi cản trở người lao động thành lập công đoàn sẽ bị xử phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng.\n\n"
+                "1. Trả lời trực tiếp: Hành vi cản trở người lao động thành lập công đoàn sẽ bị phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng và buộc thu hồi quyết định, chấm dứt hành vi vi phạm.\n\n"
                 "2. Phân tích chi tiết:\n"
-                "- Về hành vi vi phạm: Người sử dụng lao động có hành vi cản trở người lao động thành lập công đoàn bị nghiêm cấm theo quy định.\n"
-                "- Về mức phạt: Hành vi vi phạm này sẽ bị xử phạt hành chính với mức phạt tiền cụ thể từ 10.000.000 đồng đến 20.000.000 đồng.\n\n"
+                "- Về mức phạt: Khoản 1 Điều 34 Nghị định 12/2022/NĐ-CP quy định phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng đối với hành vi cản trở người lao động thành lập, gia nhập và hoạt động công đoàn.\n"
+                "- Về biện pháp khắc phục: Người sử dụng lao động bị buộc thu hồi quyết định vi phạm và bảo đảm quyền thành lập công đoàn của người lao động theo Khoản 2 Điều 34 cùng Nghị định.\n\n"
                 "3. Căn cứ pháp lý:\n"
-                "- Khoản [Y] Điều [X] Nghị định [Z] năm 2022.\n\n"
+                "- Khoản 1, Khoản 2 Điều 34 Nghị định số 12/2022/NĐ-CP về xử phạt vi phạm hành chính trong lĩnh vực lao động.\n\n"
                 "4. Hạn chế của dữ liệu (nếu có):\n"
-                "- Tài liệu được cung cấp không đề cập đến các hình thức xử phạt bổ sung hay biện pháp khắc phục hậu quả khác đối với hành vi này."
+                "- Tài liệu không nêu mức phạt đối với tái phạm hoặc vi phạm quy mô lớn."
             )},
             {"role": "user", "content": user_content}
         ]
 
-        prompt = self._tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True
-        )
+        try:
+            prompt = self._tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+                enable_thinking=False,  # Tắt Qwen3 thinking mode để tránh loop vô hạn
+            )
+        except TypeError:
+            # Fallback cho tokenizer không hỗ trợ enable_thinking (Qwen2.x)
+            prompt = self._tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+
+        if getattr(self, '_is_vllm', False):
+            from vllm import SamplingParams
+            sampling_params = SamplingParams(
+                max_tokens=max_new_tokens,
+                temperature=0.0,
+                repetition_penalty=1.1,
+            )
+            outputs = self._model.generate([prompt], sampling_params, use_tqdm=False)
+            response = outputs[0].outputs[0].text
+            return response.strip()
 
         inputs = self._tokenizer([prompt], return_tensors="pt").to(self._model.device)
 
@@ -227,7 +329,7 @@ class QwenGenerator:
         response = self._tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
         return response.strip()
 
-    def generate_batch_answers(self, queries: List[str], results_list: List[List[RetrievalResult]], max_new_tokens: int = 1024, warning_msgs: Optional[List[Optional[str]]] = None) -> List[str]:
+    def generate_batch_answers(self, queries: List[str], results_list: List[List[RetrievalResult]], max_new_tokens: int = 1028, warning_msgs: Optional[List[Optional[str]]] = None) -> List[str]:
         """
         Sinh câu trả lời cho một batch câu hỏi cùng lúc để tận dụng tối đa sức mạnh tính toán song song của GPU.
         """
@@ -262,71 +364,93 @@ class QwenGenerator:
                     context_parts.append(part)
                 context = "\n\n=========================================\n\n".join(context_parts)
 
-            system_prompt = (
-                "Bạn là một trợ lý pháp lý Việt Nam chuyên nghiệp, chính xác và đáng tin cậy.\n\n"
-                "Nhiệm vụ của bạn:\n"
-                "- Trả lời câu hỏi dựa trên CÁC CĂN CỨ PHÁP LÝ ĐƯỢC CUNG CẤP. Tuyệt đối không tự suy diễn hoặc giả định các nội dung không có trong tài liệu.\n"
-                "- Hãy viết hoàn toàn bằng tiếng Việt chuẩn mực. Tuyệt đối KHÔNG trộn lẫn tiếng Trung (chữ Hán), tiếng Anh hoặc bất kỳ từ ngữ nước ngoài nào khác.\n"
-                "- Tuyệt đối KHÔNG được tự bịa ra các số hiệu văn bản, điều luật không có trong các căn cứ pháp lý.\n"
-                "- Tuyệt đối không sử dụng các ký tự thay thế hoặc giữ chỗ như [X], [Y], [Z], [Nghị định số...]. Nếu tài liệu không nêu rõ số điều/khoản/năm, chỉ trích dẫn nội dung chữ hoặc ghi rõ 'Theo quy định của pháp luật hiện hành'.\n"
-                "- Hãy tổng hợp thông tin một cách ngắn gọn, súc tích. Không lặp lại cùng một ý, cùng một câu ở các mục khác nhau trong câu trả lời.\n"
-                "- Chỉ trích dẫn các thông tin trả lời trực tiếp cho câu hỏi. Không đưa các thông tin của đối tượng khác (ví dụ: doanh nghiệp công nghiệp hỗ trợ) vào câu trả lời nếu câu hỏi đang hỏi về cơ sở ươm tạo.\n"
-                "- Tuyệt đối KHÔNG sử dụng tên văn bản, điều luật hoặc các từ ngữ trong Ví dụ mẫu (Few-shot) như 'quyền công đoàn', 'thành lập công đoàn' để trả lời cho câu hỏi thực tế.\n"
-                "- Cực kỳ cẩn thận với các từ phủ định hoặc hành vi cấm: các cụm từ như 'nghiêm cấm', 'không được', 'xử phạt đối với hành vi' có nghĩa là hành vi đó BỊ CẤM, tuyệt đối không được viết thành 'người sử dụng lao động được phép thực hiện'.\n"
-                "- Không chỉ nêu tên văn bản chung chung. Hãy giải thích cụ thể nội dung quyền lợi, nghĩa vụ, ưu đãi hoặc mức phạt được quy định.\n\n"
-                "Bạn BẮT BUỘC phải trình bày câu trả lời của mình nghiêm ngặt theo cấu trúc 4 phần sau (sử dụng chính xác các tiêu đề này làm tiêu đề dòng):\n"
-                "1. Trả lời trực tiếp: Trả lời trực tiếp vào câu hỏi, nêu rõ kết luận chính hoặc hành vi và hệ quả.\n"
-                "2. Phân tích chi tiết: Diễn giải chi tiết nội dung quy định, mức phạt bằng tiền cụ thể, quyền lợi/nghĩa vụ chi tiết được quy định trong các tài liệu tham khảo.\n"
-                "3. Căn cứ pháp lý: Liệt kê chi tiết các điều khoản, điều luật cụ thể được sử dụng làm căn cứ từ tài liệu tham khảo (Ví dụ: 'Điều 17 Bộ luật Lao động 2019', 'Điều 15 Nghị định 12/2022/NĐ-CP').\n"
-                "4. Hạn chế của dữ liệu (nếu có): Nêu rõ nếu các căn cứ pháp lý được cung cấp thiếu thông tin hoặc không đủ cơ sở để trả lời đầy đủ một khía cạnh nào đó của câu hỏi."
-            )
-
             user_content = (
                 f"TÀI LIỆU THAM KHẢO CUNG CẤP:\n"
                 f"=========================================\n"
                 f"{context}\n"
                 f"=========================================\n\n"
-                f"{f'LƯU Ý QUAN TRỌNG TỪ HỆ THỐNG: {warning_msg}\\n\\n' if warning_msg else ''}"
+                f"{f'LƯU Ý QUAN TRỌNG TỪ HỆ THỐNG: {warning_msg}\n\n' if warning_msg else ''}"
                 f"CÂU HỎI: {query}\n\n"
                 f"Yêu cầu trả lời: Hãy phân tích kỹ tài liệu tham khảo trên và trả lời câu hỏi tuân thủ đúng cấu trúc 4 phần nêu trên.\n"
             )
 
             messages = [
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": _SYSTEM_PROMPT},
+                # Few-shot example — dùng số điều thật, KHÔNG dùng placeholder [X][Y][Z]
                 {"role": "user", "content": (
                     "TÀI LIỆU THAM KHẢO CUNG CẤP:\n"
                     "=========================================\n"
                     "[Căn cứ 1]\n"
                     "Độ liên quan: 0.9876\n"
-                    "Văn bản: Nghị định [Z] năm 2022 về xử phạt hành chính\n"
-                    "Điều: Điều [X]\n"
+                    "Văn bản: Nghị định số 12/2022/NĐ-CP quy định xử phạt vi phạm hành chính trong lĩnh vực lao động\n"
+                    "Điều: Điều 34\n"
                     "Nội dung:\n"
-                    "Phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng đối với hành vi cản trở người lao động thành lập công đoàn.\n"
+                    "Điều 34. Vi phạm về quyền thành lập, gia nhập và hoạt động công đoàn của người lao động\n"
+                    "1. Phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng đối với hành vi cản trở người lao động thành lập, gia nhập và hoạt động công đoàn.\n"
+                    "2. Biện pháp khắc phục hậu quả: Buộc người sử dụng lao động thu hồi quyết định, chấm dứt hành vi cản trở và đảm bảo quyền thành lập công đoàn của người lao động.\n"
                     "=========================================\n\n"
-                    "CÂU HỎI: Hành vi cản trở người lao động thành lập công đoàn bị phạt bao nhiêu tiền?\n\n"
+                    "CÂU HỎI: Hành vi cản trở người lao động thành lập công đoàn bị phạt bao nhiêu tiền và phải khắc phục ra sao?\n\n"
                     "Yêu cầu trả lời: Hãy phân tích kỹ tài liệu tham khảo trên và trả lời câu hỏi tuân thủ đúng cấu trúc 4 phần nêu trên."
                 )},
                 {"role": "assistant", "content": (
-                    "1. Trả lời trực tiếp: Hành vi cản trở người lao động thành lập công đoàn sẽ bị xử phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng.\n\n"
+                    "1. Trả lời trực tiếp: Hành vi cản trở người lao động thành lập công đoàn sẽ bị phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng và buộc thu hồi quyết định, chấm dứt hành vi vi phạm.\n\n"
                     "2. Phân tích chi tiết:\n"
-                    "- Về hành vi vi phạm: Người sử dụng lao động có hành vi cản trở người lao động thành lập công đoàn bị nghiêm cấm theo quy định.\n"
-                    "- Về mức phạt: Hành vi vi phạm này sẽ bị xử phạt hành chính với mức phạt tiền cụ thể từ 10.000.000 đồng đến 20.000.000 đồng.\n\n"
+                    "- Về mức phạt: Khoản 1 Điều 34 Nghị định 12/2022/NĐ-CP quy định phạt tiền từ 10.000.000 đồng đến 20.000.000 đồng đối với hành vi cản trở người lao động thành lập, gia nhập và hoạt động công đoàn.\n"
+                    "- Về biện pháp khắc phục: Người sử dụng lao động bị buộc thu hồi quyết định vi phạm và bảo đảm quyền thành lập công đoàn của người lao động theo Khoản 2 Điều 34 cùng Nghị định.\n\n"
                     "3. Căn cứ pháp lý:\n"
-                    "- Khoản [Y] Điều [X] Nghị định [Z] năm 2022.\n\n"
+                    "- Khoản 1, Khoản 2 Điều 34 Nghị định số 12/2022/NĐ-CP về xử phạt vi phạm hành chính trong lĩnh vực lao động.\n\n"
                     "4. Hạn chế của dữ liệu (nếu có):\n"
-                    "- Tài liệu được cung cấp không đề cập đến các hình thức xử phạt bổ sung hay biện pháp khắc phục hậu quả khác đối với hành vi này."
+                    "- Tài liệu không nêu mức phạt đối với tái phạm hoặc vi phạm quy mô lớn."
                 )},
                 {"role": "user", "content": user_content}
             ]
 
-            prompt = self._tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True
-            )
+            try:
+                prompt = self._tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True,
+                    enable_thinking=False,  # Tắt Qwen3 thinking mode
+                )
+            except TypeError:
+                prompt = self._tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True,
+                )
             prompts.append(prompt)
 
+        if getattr(self, '_is_vllm', False):
+            from vllm import SamplingParams
+            sampling_params = SamplingParams(
+                max_tokens=max_new_tokens,
+                temperature=0.0,
+                repetition_penalty=1.1,
+            )
+            outputs = self._model.generate(prompts, sampling_params, use_tqdm=False)
+            responses = [out.outputs[0].text.strip() for out in outputs]
+            return responses
+
         inputs = self._tokenizer(prompts, return_tensors="pt", padding=True).to(self._model.device)
+
+        # Trên CPU, batch inference với padding lớn rất chậm/bị treo. Chạy tuần tự thay thế.
+        if getattr(self, '_device', 'cuda') == 'cpu':
+            print(f"[generator] CPU mode: đang sinh tuần tự {len(prompts)} câu...", flush=True)
+            results = []
+            for i, prompt in enumerate(prompts):
+                inp = self._tokenizer([prompt], return_tensors="pt")
+                out = self._model.generate(
+                    **inp,
+                    max_new_tokens=max_new_tokens,
+                    do_sample=False,
+                    repetition_penalty=1.1,
+                    pad_token_id=self._tokenizer.eos_token_id
+                )
+                gen_ids = out[0][inp.input_ids.shape[1]:]
+                text = self._tokenizer.decode(gen_ids, skip_special_tokens=True)
+                results.append(text.strip())
+                print(f"[generator]   [{i+1}/{len(prompts)}] xong", flush=True)
+            return results
 
         outputs = self._model.generate(
             **inputs,

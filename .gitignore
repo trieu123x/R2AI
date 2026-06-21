@@ -1,11 +1,13 @@
 # Ignored files and folders
 .env
+.venv/
+venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 *.json
-
+vietnamese-legal-documents
 # Database files
 database/*.db
 database/local_chunks.db
