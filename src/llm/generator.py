@@ -24,7 +24,8 @@ class PipelineGenerator:
         t0 = time.time()
 
         try:
-            dtype = "bfloat16" if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else "float16"
+            cc_major = torch.cuda.get_device_capability()[0] if torch.cuda.is_available() else 0
+            dtype = "bfloat16" if cc_major >= 8 else "float16"
 
             self._model = LLM(
                 model=self.model_name,

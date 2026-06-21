@@ -112,7 +112,8 @@ class QwenGenerator:
             print(f"[generator] Loading model '{self.model_name}' with vLLM (Offline={is_offline})...", flush=True)
             t0 = time.time()
             try:
-                dtype = "bfloat16" if torch.cuda.is_bf16_supported() else "float16"
+                cc_major = torch.cuda.get_device_capability()[0]
+                dtype = "bfloat16" if cc_major >= 8 else "float16"
                 num_gpus = torch.cuda.device_count()
                 
                 # Check VRAM to set memory utilization
@@ -171,7 +172,8 @@ class QwenGenerator:
 
             max_memory = None
             if use_gpu:
-                dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+                cc_major = torch.cuda.get_device_capability()[0]
+                dtype = torch.bfloat16 if cc_major >= 8 else torch.float16
                 device_map = "auto"
                 
                 # Cấu hình max_memory cho đa GPU (Kaggle T4 x 2) để tránh GPU 0 bị quá tải KV cache
