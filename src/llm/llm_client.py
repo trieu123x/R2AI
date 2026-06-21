@@ -103,6 +103,10 @@ class QwenGenerator:
         use_vllm = False
         if torch.cuda.is_available():
             try:
+                # Tắt flashinfer JIT compilation để tránh lỗi "-lcuda not found"
+                # trên Kaggle với CUDA 13.x (libcuda.so stub bị thiếu)
+                os.environ.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
+                os.environ.setdefault("VLLM_ATTENTION_BACKEND", "FLASH_ATTN")
                 from vllm import LLM
                 use_vllm = True
             except ImportError:

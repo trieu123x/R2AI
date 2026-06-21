@@ -16,6 +16,9 @@ class PipelineGenerator:
             return
 
         import torch
+        # Tắt flashinfer JIT compilation để tránh lỗi "-lcuda not found" trên Kaggle CUDA 13.x
+        os.environ.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
+        os.environ.setdefault("VLLM_ATTENTION_BACKEND", "FLASH_ATTN")
         from vllm import LLM
 
         is_offline = os.environ.get("HF_HUB_OFFLINE") == "1"
