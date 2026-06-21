@@ -22,6 +22,10 @@ class PipelineGenerator:
         from vllm import LLM
 
         is_offline = os.environ.get("HF_HUB_OFFLINE") == "1"
+        
+        # Tắt FlashInfer Sampler và ép dùng XFORMERS để tránh lỗi build C++ trên Kaggle T4
+        os.environ["VLLM_USE_FLASHINFER_SAMPLER"] = "0"
+        os.environ["VLLM_ATTENTION_BACKEND"] = "XFORMERS"
 
         print(f"[generator] Loading model '{self.model_name}' with vLLM (Offline={is_offline})...", flush=True)
         t0 = time.time()
