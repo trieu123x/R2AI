@@ -41,6 +41,7 @@ class RetrievalResult:
     score: float
     source: str
     article_hint: Optional[str] = None
+    article_number: Optional[int] = None
     best_chunk_content: Optional[str] = None
 
     def format_relevant_doc(self) -> str:
@@ -83,8 +84,9 @@ def _parse_meta_from_content(content: str) -> dict:
 
     # Tách legal_type (loại văn bản)
     legal_type_match = re.match(
-        r'^(Lu\u1eadt|B\u1ed9 lu\u1eadt|Ngh\u1ecb \u0111\u1ecbnh|Th\u00f4ng t\u01b0|'
+        r'^(Lu\u1eadt|B\u1ed9 lu\u1eadt|Ngh\u1ecb \u0111\u1ecbnh|Th\u00f4ng t\u01b0 li\u00ean t\u1ecbch|Th\u00f4ng t\u01b0|'
         r'Quy\u1ebft \u0111\u1ecbnh|Ngh\u1ecb quy\u1ebft|Ph\u00e1p l\u1ec7nh|'
+        r'Hi\u1ebfn ph\u00e1p|V\u0103n b\u1ea3n h\u1ee3p nh\u1ea5t|'
         r'C\u00f4ng v\u0103n|Th\u00f4ng b\u00e1o|Ch\u1ec9 th\u1ecb)\b',
         full_title, re.UNICODE
     )
@@ -489,7 +491,7 @@ class LegalRetriever:
                 
                 placeholders = ",".join("?" for _ in rowids)
                 cur.execute(f"""
-                    SELECT rowid, id, document_id, chunk_index, content
+                    SELECT rowid, id, document_id, chunk_index, article_hint, article_number, content
                     FROM document_chunks
                     WHERE rowid IN ({placeholders})
                 """, rowids)
@@ -497,7 +499,7 @@ class LegalRetriever:
                 
                 results_list = []
                 for row in details:
-                    r_id, cid, doc_id, chunk_idx, content = row
+                    r_id, cid, doc_id, chunk_idx, art_hint, art_num, content = row
                     score = scores.get(r_id, 0.0)
                     meta = _parse_meta_from_content(content or "")
                     results_list.append(RetrievalResult(
@@ -510,7 +512,8 @@ class LegalRetriever:
                         legal_type=meta["legal_type"],
                         score=score,
                         source="fts",
-                        article_hint=extract_article_hint(content or ""),
+                        article_hint=art_hint,
+                        article_number=art_num,
                     ))
                 results_list.sort(key=lambda x: x.score, reverse=True)
                 return results_list
@@ -619,7 +622,7 @@ class LegalRetriever:
 
         like_pattern = f"%{keywords[0]}%"
         cur.execute("""
-            SELECT id, document_id, chunk_index, content
+            SELECT id, document_id, chunk_index, article_hint, article_number, content
             FROM document_chunks
             WHERE content LIKE ?
             LIMIT ?;
@@ -628,7 +631,7 @@ class LegalRetriever:
 
         results = []
         for row in rows:
-            cid, doc_id, chunk_idx, content = row[0], row[1], row[2], row[3] or ""
+            cid, doc_id, chunk_idx, art_hint, art_num, content = row[0], row[1], row[2], row[3], row[4], row[5] or ""
             score = float(sum(1 for kw in keywords if kw in content))
             if score == 0:
                 continue
@@ -643,7 +646,8 @@ class LegalRetriever:
                 legal_type=meta["legal_type"],
                 score=score,
                 source="fts",
-                article_hint=extract_article_hint(content),
+                article_hint=art_hint,
+                article_number=art_num,
             ))
         results.sort(key=lambda x: -x.score)
         return results[:k]
@@ -790,7 +794,7 @@ class LegalRetriever:
             cur = conn.cursor()
             placeholders = ",".join("?" for _ in valid_indices)
             cur.execute(f"""
-                SELECT rowid, id, document_id, chunk_index, content
+                SELECT rowid, id, document_id, chunk_index, article_hint, article_number, content
                 FROM document_chunks
                 WHERE rowid IN ({placeholders});
             """, valid_indices)
@@ -807,6 +811,8 @@ class LegalRetriever:
                 cid = row["id"]
                 doc_id = row["document_id"]
                 chunk_idx = row["chunk_index"]
+                art_hint = row["article_hint"]
+                art_num = row["article_number"]
                 content = row["content"] or ""
                 
                 meta = _parse_meta_from_content(content)
@@ -820,7 +826,8 @@ class LegalRetriever:
                     legal_type=meta["legal_type"],
                     score=float(score),
                     source="vector",
-                    article_hint=extract_article_hint(content),
+                    article_hint=art_hint,
+                    article_number=art_num,
                 ))
             return results
 
@@ -910,10 +917,9 @@ class LegalRetriever:
         
         for r, score in zip(results, scores):
             rerank_score = float(score)
-            # Normalize PhoRanker output to positive if it outputs logits
-            if rerank_score < 0 or rerank_score > 1.0:
-                import math
-                rerank_score = 1 / (1 + math.exp(-max(min(rerank_score, 100), -100)))
+            # Always apply sigmoid normalization to map raw CrossEncoder logits to the range [0, 1]
+            import math
+            rerank_score = 1 / (1 + math.exp(-max(min(rerank_score, 20), -20)))
                 
             weight = LEGAL_WEIGHT.get(r.legal_type, 0.7)
             final_score = rerank_score * weight
@@ -1189,6 +1195,7 @@ class LegalRetriever:
                 filtered_by_score = results[:2]
                 
             results = filtered_by_score
+            print(f"[threshold] {len(results)} -> {len(filtered_by_score)}")
 
         # 5. Article-level Dedup (Giảm context thừa)
         seen_articles = set()
@@ -1231,8 +1238,8 @@ class LegalRetriever:
             
         filtered_final = []
         for r in results:
-            # Nguyên tắc 1: Nếu điểm Rerank đã rất cao (>= 0.45), giữ lại ngay lập tức không cần lọc từ khóa
-            if r.score >= 0.45:
+            # Nguyên tắc 1: Nếu điểm Rerank đã rất cao (>= 0.6), giữ lại ngay lập tức không cần lọc từ khóa
+            if r.score >= 0.6:
                 filtered_final.append(r)
                 continue
                 
