@@ -23,11 +23,15 @@ def init_local_db():
             id TEXT PRIMARY KEY,
             document_id INTEGER,
             chunk_index INTEGER,
+            article_hint TEXT,
+            article_number INTEGER,
             content TEXT,
-            segmented_content TEXT
+            segmented_content TEXT,
+            embedding BLOB
         );
     """)
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_chunks_doc_id ON document_chunks(document_id);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_chunks_article ON document_chunks(document_id, article_number);")
     conn.commit()
     return conn
 
@@ -86,7 +90,7 @@ def load_documents_local():
     print(f"[+] Successfully loaded {len(df_merged)} filtered documents.")
     return df_merged
 
-def chunk_document(doc_id, doc_num, title, content, max_chars=800):
+def chunk_document(doc_id, doc_num, title, content, max_chars=800, overlap=100):
     """Chunk a single document using the Hybrid Chunker strategy."""
     chunks = []
     if not content:
@@ -106,6 +110,10 @@ def chunk_document(doc_id, doc_num, title, content, max_chars=800):
         art_header_match = re.match(r'^(Điều \d+[\.:\s]*[^\n]*)', art)
         art_header = art_header_match.group(1) if art_header_match else f"Mục {art_idx}"
         
+        # Extract article number
+        art_num_match = re.match(r'Điều\s+(\d+)', art_header)
+        article_number = int(art_num_match.group(1)) if art_num_match else None
+        
         if len(art) <= max_chars:
             context_prefix = f"Văn bản: {title} ({doc_num}) | {art_header} | Nội dung: "
             full_text = context_prefix + art
@@ -113,6 +121,8 @@ def chunk_document(doc_id, doc_num, title, content, max_chars=800):
             chunks.append({
                 "document_id": doc_id,
                 "chunk_index": len(chunks),
+                "article_hint": art_header,
+                "article_number": article_number,
                 "content": full_text
             })
         else:
@@ -127,26 +137,35 @@ def chunk_document(doc_id, doc_num, title, content, max_chars=800):
                 
                 if len(current_sub_chunk) + len(para) > max_chars:
                     if current_sub_chunk:
-                        context_prefix = f"Văn bản: {title} ({doc_num}) | {art_header} (Phần {sub_idx}) | Nội dung: "
+                        hint = f"{art_header} (Phần {sub_idx})"
+                        context_prefix = f"Văn bản: {title} ({doc_num}) | {hint} | Nội dung: "
                         full_text = context_prefix + current_sub_chunk
                         
                         chunks.append({
                             "document_id": doc_id,
                             "chunk_index": len(chunks),
+                            "article_hint": hint,
+                            "article_number": article_number,
                             "content": full_text
                         })
                         sub_idx += 1
-                    current_sub_chunk = para
+                    
+                    # Apply overlap if specified
+                    overlap_text = current_sub_chunk[-overlap:] if overlap > 0 and len(current_sub_chunk) > overlap else current_sub_chunk
+                    current_sub_chunk = overlap_text + "\n" + para if overlap_text else para
                 else:
                     current_sub_chunk = (current_sub_chunk + "\n" + para) if current_sub_chunk else para
             
             if current_sub_chunk:
-                context_prefix = f"Văn bản: {title} ({doc_num}) | {art_header} (Phần {sub_idx}) | Nội dung: "
+                hint = f"{art_header} (Phần {sub_idx})"
+                context_prefix = f"Văn bản: {title} ({doc_num}) | {hint} | Nội dung: "
                 full_text = context_prefix + current_sub_chunk
                 
                 chunks.append({
                     "document_id": doc_id,
                     "chunk_index": len(chunks),
+                    "article_hint": hint,
+                    "article_number": article_number,
                     "content": full_text
                 })
                 
@@ -190,14 +209,17 @@ def main():
                 chunk_id,
                 chunk['document_id'],
                 chunk['chunk_index'],
+                chunk.get('article_hint', ''),
+                chunk.get('article_number'),
                 chunk['content'],
                 segmented
             ))
             
         if len(local_insert_buffer) >= batch_size:
             local_cursor.executemany("""
-                INSERT OR REPLACE INTO document_chunks (id, document_id, chunk_index, content, segmented_content)
-                VALUES (?, ?, ?, ?, ?);
+                INSERT OR REPLACE INTO document_chunks 
+                (id, document_id, chunk_index, article_hint, article_number, content, segmented_content)
+                VALUES (?, ?, ?, ?, ?, ?, ?);
             """, local_insert_buffer)
             local_conn.commit()
             total_chunks_created += len(local_insert_buffer)
@@ -209,8 +231,9 @@ def main():
     # Flush remaining buffer
     if local_insert_buffer:
         local_cursor.executemany("""
-            INSERT OR REPLACE INTO document_chunks (id, document_id, chunk_index, content, segmented_content)
-            VALUES (?, ?, ?, ?, ?);
+            INSERT OR REPLACE INTO document_chunks 
+            (id, document_id, chunk_index, article_hint, article_number, content, segmented_content)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
         """, local_insert_buffer)
         local_conn.commit()
         total_chunks_created += len(local_insert_buffer)

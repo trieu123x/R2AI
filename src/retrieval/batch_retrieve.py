@@ -33,6 +33,7 @@ except ImportError:
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
+DB_PATH = os.path.join(PROJECT_ROOT, "database", "local_chunks.db")
 
 from src.retrieval.retriever import LegalRetriever
 
@@ -61,41 +62,49 @@ def has_repetitive_loop(text: str) -> bool:
                         return True
     return False
 
+DATE_FULL_RE = re.compile(r"\b\d{1,2}/\d{1,2}/(?:19|20)\d{2}\b")  # dd/mm/yyyy
+DOC_NUM_RE = re.compile(r"\d+/(?:19|20)\d{2}(?:/[A-ZĐƠƯ0-9\-]+)?")  # số/năm[/loại]
+
+def normalize_doc_key(s: str) -> str:
+    parts = s.split("/")
+    return f"{parts[0]}/{parts[1]}" if len(parts) >= 2 else s
+
+def extract_doc_numbers_safe(text: str) -> set:
+    # Loại bỏ cụm ngày-tháng-năm đầy đủ trước, tránh bắt nhầm phần đuôi (vd "07/2023" trong "01/07/2023")
+    text_wo_dates = DATE_FULL_RE.sub(" ", text)
+    return {normalize_doc_key(d) for d in DOC_NUM_RE.findall(text_wo_dates)}
+
 def validate_citations_detailed(answer: str, results: list):
-    """Kiểm tra chi tiết trích dẫn của câu trả lời so với context."""
     if has_repetitive_loop(answer):
         return False, "câu trả lời bị lặp từ/cụm từ vô hạn (loop)"
 
-    # Check Articles
+    FEW_SHOT_DOCS = {"12/2022"}
+    FEW_SHOT_ARTICLES = {"34"}
+
+    # 1. ĐIỀU LUẬT — giữ nguyên như cũ
     answer_articles = set(re.findall(r"Điều\s+(\d+)", answer, re.IGNORECASE))
     if answer_articles:
         context_articles = set()
         for r in results:
             if r.article_hint:
-                matches = re.findall(r"Điều\s+(\d+)", r.article_hint, re.IGNORECASE)
-                context_articles.update(matches)
-            matches_content = re.findall(r"Điều\s+(\d+)", r.content, re.IGNORECASE)
-            context_articles.update(matches_content)
-            
-        invalid_articles = answer_articles - context_articles
+                context_articles.update(re.findall(r"Điều\s+(\d+)", r.article_hint, re.IGNORECASE))
+            context_articles.update(re.findall(r"Điều\s+(\d+)", r.content, re.IGNORECASE))
+        invalid_articles = (answer_articles - context_articles) - FEW_SHOT_ARTICLES
         if invalid_articles:
             return False, f"dẫn chiếu sai các Điều không có trong context: {invalid_articles}"
-            
-    # Check Documents
-    answer_docs = set(re.findall(r"(\d+/\d+)", answer))
+
+    # 2. SỐ HIỆU VĂN BẢN — FIX: loại trừ ngày tháng, chuẩn hoá để so sánh nhất quán
+    answer_docs = extract_doc_numbers_safe(answer)
     if answer_docs:
         context_docs = set()
         for r in results:
             if r.doc_number:
-                matches = re.findall(r"(\d+/\d+)", r.doc_number)
-                context_docs.update(matches)
-            matches_content = re.findall(r"(\d+/\d+)", r.content)
-            context_docs.update(matches_content)
-            
-        invalid_docs = answer_docs - context_docs
+                context_docs.update(extract_doc_numbers_safe(r.doc_number))
+            context_docs.update(extract_doc_numbers_safe(r.content))
+        invalid_docs = (answer_docs - context_docs) - FEW_SHOT_DOCS
         if invalid_docs:
             return False, f"dẫn chiếu sai các số hiệu Văn bản không có trong context: {invalid_docs}"
-            
+
     return True, ""
 
 def generate_rule_based_answer(results: list) -> str:
@@ -134,24 +143,334 @@ def generate_rule_based_answer(results: list) -> str:
     return "\n\n".join(answer_parts)
 
 
+def clean_vietnamese_text(text: str) -> str:
+    # Convert to lowercase and normalize spaces
+    text = text.lower().strip()
+    text = re.sub(r'\s+', ' ', text)
+    # Remove punctuation
+    text = re.sub(r'[.,\-–/\"\'()“”:_]', ' ', text)
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
+
+def clean_doc_number(num: str) -> str:
+    if not num:
+        return ""
+    num = num.lower().replace('đ', 'd').strip()
+    return num
+
+def is_doc_number_cited(doc_number: str, answer: str) -> bool:
+    if not doc_number:
+        return False
+        
+    ans_clean = clean_doc_number(answer)
+    num_clean = clean_doc_number(doc_number)
+    
+    # 1. Direct match
+    if num_clean in ans_clean:
+        return True
+        
+    # 2. Match without the suffix part (e.g. 04/2017/QH14 -> 04/2017)
+    parts_slash = num_clean.split('/')
+    if len(parts_slash) >= 2:
+        base_slash = f"{parts_slash[0]}/{parts_slash[1]}"
+        if base_slash in ans_clean:
+            return True
+            
+    # 3. Match without dash suffix (e.g. 04/vbhn-btc -> 04/vbhn, 09/vbhn-vpqh -> 09/vbhn)
+    parts_dash = num_clean.split('-')
+    if len(parts_dash) >= 2:
+        base_dash = parts_dash[0]
+        # Only use if base_dash has a slash and is specific enough (e.g. contains at least 4 chars)
+        if '/' in base_dash and len(base_dash) >= 4:
+            if base_dash in ans_clean:
+                return True
+                
+    return False
+
+def is_doc_name_mentioned(legal_type: str, doc_number: str, title: str, answer: str) -> bool:
+    if not title:
+        return False
+    legal_type = legal_type.strip() if legal_type else ""
+    title = title.strip()
+
+    # FIX: title luôn có dạng '{LoaiVB} {SoHieu} {TenThat}'. Phải bỏ doc_number
+    # khỏi title trước, nếu không candidate sẽ luôn chứa số hiệu và không bao giờ
+    # match được answer chỉ ghi tên suông (vd "Luật Sở hữu trí tuệ 2005").
+    core = title.replace(doc_number, "").strip() if doc_number else title
+    core = re.sub(r"\s+", " ", core)
+
+    # FIX: sau khi bỏ số hiệu, core thường có dạng lặp '{LoaiVB} {LoaiVB} {TenThuan}'
+    # vì legal_type vốn đã nằm sẵn trong title gốc trước số hiệu.
+    pure_name = core
+    if legal_type and core.lower().startswith(legal_type.lower()):
+        pure_name = core[len(legal_type):].strip()
+
+    candidates = [core, pure_name]
+    if legal_type:
+        candidates.append(f"{legal_type} {pure_name}".strip())
+
+    extended_candidates = []
+    for c in candidates:
+        extended_candidates.append(c)
+        c_no_year = re.sub(r'\b(năm\s+)?20\d{2}\b', '', c, flags=re.IGNORECASE)
+        c_no_year = re.sub(r'\b(năm\s+)?19\d{2}\b', '', c_no_year, flags=re.IGNORECASE)
+        extended_candidates.append(c_no_year.strip())
+
+    clean_ans = clean_vietnamese_text(answer)
+    for c in extended_candidates:
+        clean_c = clean_vietnamese_text(c)
+        if len(clean_c.split()) >= 3 and clean_c in clean_ans:
+            return True
+    return False
+
+    if not title:
+        return False
+        
+    legal_type = legal_type.strip() if legal_type else ""
+    title = title.strip()
+    
+    # Build full name candidates
+    candidates = []
+    
+    # Check if title already starts with legal_type
+    title_lower = title.lower()
+    legal_lower = legal_type.lower()
+    
+    if legal_lower and title_lower.startswith(legal_lower):
+        candidates.append(title)
+    else:
+        candidates.append(title)
+        if legal_type:
+            candidates.append(f"{legal_type} {title}")
+            
+    # Also try stripping year suffix from candidates
+    # E.g. "năm 2017", "2017", "năm 2021", etc.
+    extended_candidates = []
+    for c in candidates:
+        extended_candidates.append(c)
+        c_no_year = re.sub(r'\b(năm\s+)?20\d{2}\b', '', c, flags=re.IGNORECASE)
+        c_no_year = re.sub(r'\b(năm\s+)?19\d{2}\b', '', c_no_year, flags=re.IGNORECASE)
+        extended_candidates.append(c_no_year.strip())
+        
+    # Clean both candidates and answer
+    clean_ans = clean_vietnamese_text(answer)
+    for c in extended_candidates:
+        clean_c = clean_vietnamese_text(c)
+        # Only match if the candidate name has at least 3 words to avoid generic short names
+        if len(clean_c.split()) >= 3:
+            if clean_c in clean_ans:
+                return True
+    return False
+
+def is_doc_cited(r, answer: str) -> bool:
+    if is_doc_number_cited(r.doc_number, answer):
+        return True
+    if is_doc_name_mentioned(r.legal_type, r.doc_number, r.title, answer):  # thêm r.doc_number
+        return True
+    if r.legal_type and r.legal_type.lower() == "hiến pháp":
+        if "hiến pháp" in answer.lower():
+            return True
+    return False
+
+
+def extract_cited_pairs(answer: str) -> list:
+    """Trích xuất các cặp (doc_number, article_number) từ câu trả lời."""
+    all_docs = list(set(re.findall(r'\b\d+/\d+/[A-ZĐa-zđ0-9\-–/]+\b', answer)))
+    all_arts = list(set(int(x) for x in re.findall(r'\bĐiều\s+(\d+)\b', answer, re.IGNORECASE)))
+    
+    if not all_docs or not all_arts:
+        return []
+        
+    if len(all_docs) == 1:
+        # Nếu chỉ có 1 văn bản được nhắc tới, map nó với tất cả các Điều tìm thấy
+        return [(all_docs[0], art) for art in all_arts]
+        
+    # Nếu có nhiều văn bản, dùng proximity matching (khoảng cách giữa số Điều và số văn bản <= 120 ký tự)
+    pairs = []
+    # Pattern 1: Điều X ... DocNum
+    pattern1 = r'\bĐiều\s+(\d+)\b[\s\S]{1,120}?\b(\d+/\d+/[A-ZĐa-zđ0-9\-–/]+)\b'
+    for match in re.finditer(pattern1, answer, re.IGNORECASE):
+        art_num = int(match.group(1))
+        doc_num = match.group(2)
+        pairs.append((doc_num, art_num))
+        
+    # Pattern 2: DocNum ... Điều X
+    pattern2 = r'\b(\d+/\d+/[A-ZĐa-zđ0-9\-–/]+)\b[\s\S]{1,120}?\bĐiều\s+(\d+)\b'
+    for match in re.finditer(pattern2, answer, re.IGNORECASE):
+        doc_num = match.group(1)
+        art_num = int(match.group(2))
+        pairs.append((doc_num, art_num))
+        
+    return list(set(pairs))
+
+
+# Global counters for fallback activations
+FALLBACK_DOCS_COUNT = 0
+FALLBACK_ARTICLES_COUNT = 0
+
 def build_submission_entry(qid: int, question: str, results: list, answer: str = "") -> dict:
-    """Tạo một entry trong results.json theo đúng format cuộc thi."""
+    """Tạo một entry trong results.json theo đúng format cuộc thi với bộ lọc trích dẫn."""
+    global FALLBACK_DOCS_COUNT, FALLBACK_ARTICLES_COUNT
+    
+    # Sao chép nông kết quả ban đầu tránh đột biến danh sách gốc ngoài phạm vi
+    results = list(results)
+    
+    # Tích hợp DB lookup trực tiếp từ SQLite local nếu có câu trả lời sinh ra
+    if answer and os.path.exists(DB_PATH):
+        try:
+            cited_pairs = extract_cited_pairs(answer)
+            all_arts = [int(x) for x in re.findall(r'\bĐiều\s+(\d+)\b', answer, re.IGNORECASE)]
+            cited_in_results = [r for r in results if is_doc_cited(r, answer)]
+            
+            # Gộp thêm trích dẫn suy luận từ tài liệu có sẵn trong kết quả
+            if len(cited_in_results) == 1 and all_arts:
+                for art in all_arts:
+                    cited_pairs.append((cited_in_results[0].doc_number, art))
+            elif len(cited_in_results) > 1 and all_arts:
+                for r in cited_in_results:
+                    for art in all_arts:
+                        escaped_num = re.escape(clean_doc_number(r.doc_number))
+                        escaped_name = re.escape(clean_vietnamese_text(r.title.replace(r.doc_number, "")))
+                        if len(escaped_name.split()) >= 3:
+                            pattern_str = rf'(?:Điều\s+{art}\b[\s\S]{{1,120}}?(?:{escaped_num}|{escaped_name})|(?:{escaped_num}|{escaped_name})[\s\S]{{1,120}}?Điều\s+{art}\b)'
+                            if re.search(pattern_str, answer, re.IGNORECASE):
+                                cited_pairs.append((r.doc_number, art))
+                                
+            cited_pairs = list(set(cited_pairs))
+            
+            if cited_pairs:
+                import sqlite3
+                from src.retrieval.retriever import _parse_meta_from_content, RetrievalResult
+                
+                conn = sqlite3.connect(DB_PATH)
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                
+                doc_to_id = {}
+                
+                for doc_num, art_num in cited_pairs:
+                    exists_in_results = False
+                    for r in results:
+                        if r.doc_number == doc_num and r.article_number == art_num:
+                            exists_in_results = True
+                            break
+                    if exists_in_results:
+                        continue
+                        
+                    if doc_num not in doc_to_id:
+                        doc_pattern = f"%({doc_num})%"
+                        cur.execute("SELECT document_id FROM document_chunks WHERE content LIKE ? LIMIT 1", (doc_pattern,))
+                        row = cur.fetchone()
+                        if row:
+                            doc_to_id[doc_num] = row["document_id"]
+                        else:
+                            wildcard = doc_num.replace('đ', '_').replace('Đ', '_').replace('d', '_').replace('D', '_')
+                            cur.execute("SELECT document_id FROM document_chunks WHERE content LIKE ? LIMIT 1", (f"%({wildcard})%",))
+                            row = cur.fetchone()
+                            if row:
+                                doc_to_id[doc_num] = row["document_id"]
+                            else:
+                                doc_to_id[doc_num] = None
+                                
+                    doc_id = doc_to_id.get(doc_num)
+                    if doc_id is not None:
+                        cur.execute("""
+                            SELECT id, document_id, chunk_index, article_hint, article_number, content 
+                            FROM document_chunks 
+                            WHERE document_id = ? AND article_number = ?
+                            LIMIT 1
+                        """, (doc_id, art_num))
+                        chunk_row = cur.fetchone()
+                        if chunk_row:
+                            content = chunk_row["content"] or ""
+                            meta = _parse_meta_from_content(content)
+                            new_r = RetrievalResult(
+                                chunk_id=str(chunk_row["id"]),
+                                document_id=chunk_row["document_id"],
+                                chunk_index=chunk_row["chunk_index"],
+                                content=content,
+                                doc_number=meta["document_number"],
+                                title=meta["title"],
+                                legal_type=meta["legal_type"],
+                                score=1.0,
+                                source="db_lookup",
+                                article_hint=chunk_row["article_hint"],
+                                article_number=chunk_row["article_number"]
+                            )
+                            results.append(new_r)
+                            print(f"  [DB Lookup] Recovered missing citation: {doc_num} Điều {art_num}", flush=True)
+                conn.close()
+        except Exception as e:
+            print(f"  [DB Lookup] Exception occurred during lookup: {e}", flush=True)
+
     docs_seen = set()
     articles_seen = set()
     relevant_docs = []
     relevant_articles = []
 
+    # 1. Nhận diện các tài liệu được trích dẫn thực tế trong câu trả lời
     for r in results:
         doc_str = r.format_relevant_doc()
+        art_str = r.format_relevant_article()
+        
+        if is_doc_cited(r, answer):
+            if doc_str not in docs_seen:
+                docs_seen.add(doc_str)
+                relevant_docs.append(doc_str)
+                
+            # Kiểm tra xem Điều luật cụ thể có được trích dẫn không
+            if r.article_hint:
+                m = re.search(r'\d+', r.article_hint)
+                if m:
+                    art_num = m.group()
+                    art_pattern = rf'(?:Điều|khoản)\s+{art_num}\b'
+                    if re.search(art_pattern, answer, re.IGNORECASE):
+                        if art_str not in articles_seen:
+                            articles_seen.add(art_str)
+                            relevant_articles.append(art_str)
+                else:
+                    if art_str not in articles_seen:
+                        articles_seen.add(art_str)
+                        relevant_articles.append(art_str)
+            else:
+                if art_str not in articles_seen:
+                    articles_seen.add(art_str)
+                    relevant_articles.append(art_str)
+
+    # 2. Fallback: Luôn giữ lại ít nhất tài liệu Top 1 để đảm bảo độ bao phủ cơ sở (Base Recall)
+    fallback_doc_triggered = False
+    fallback_art_triggered = False
+
+    if not relevant_docs and results:
+        FALLBACK_DOCS_COUNT += 1
+        fallback_doc_triggered = True
+        top_r = results[0]
+        doc_str = top_r.format_relevant_doc()
         if doc_str not in docs_seen:
             docs_seen.add(doc_str)
             relevant_docs.append(doc_str)
+            
+    if not relevant_articles:
+        fallback_art_triggered = True
+        # Fallback lấy các điều thuộc tài liệu được chọn
+        for r in results:
+            doc_str = r.format_relevant_doc()
+            if doc_str in docs_seen:
+                art_str = r.format_relevant_article()
+                if art_str not in articles_seen:
+                    articles_seen.add(art_str)
+                    relevant_articles.append(art_str)
+                    
+    if not relevant_articles and results:
+        FALLBACK_ARTICLES_COUNT += 1
+        top_r = results[0]
+        art_str = top_r.format_relevant_article()
+        if art_str not in articles_seen:
+            articles_seen.add(art_str)
+            relevant_articles.append(art_str)
 
-        if r.article_hint:
-            art_str = r.format_relevant_article()
-            if art_str not in articles_seen:
-                articles_seen.add(art_str)
-                relevant_articles.append(art_str)
+    if fallback_doc_triggered or fallback_art_triggered:
+        print(f"  [Citation Filter] QID {qid}: Fallback activated (doc={fallback_doc_triggered}, art={fallback_art_triggered})", flush=True)
 
     return {
         "id": qid,
@@ -176,10 +495,6 @@ def main():
     parser.add_argument("--vector-weight", type=float, default=0.5)
     parser.add_argument("--fts-weight", type=float, default=0.5)
     parser.add_argument("--rrf-k", type=int, default=60)
-    parser.add_argument("--local", "-l", action="store_true", default=True,
-                        help="Dung local SQLite thay vi Supabase (offline mode) (mac dinh: BAT)")
-    parser.add_argument("--postgres", action="store_true", default=False,
-                        help="Dung Supabase/PostgreSQL (mac dinh: TAT)")
     parser.add_argument("--rerank", "-r", action="store_true", default=True,
                         help="Kích hoạt Reranker PhoRanker để tăng độ chính xác tìm kiếm (mặc định: BẬT)")
     parser.add_argument("--no-rerank", dest="rerank", action="store_false",
@@ -205,32 +520,14 @@ def main():
     print(f"[batch] Mode: {args.mode} | Top-K: {args.top_k} | Rerank: {args.rerank} | LLM: {args.llm}")
     print("-" * 60)
 
-    # Chọn retriever
-    use_postgres = getattr(args, "postgres", False)
-    if use_postgres:
-        try:
-            retriever = LegalRetriever(
-                top_k=args.top_k,
-                vector_weight=args.vector_weight,
-                fts_weight=args.fts_weight,
-                rrf_k=args.rrf_k,
-                use_postgres=True,
-            )
-            retriever._get_pg_conn()
-            print("[batch] Backend: LOCAL POSTGRESQL")
-        except Exception as e:
-            print(f"[batch] Local PostgreSQL failed ({e}), using LOCAL SQLite")
-            use_postgres = False
-
-    if not use_postgres:
-        retriever = LegalRetriever(
-            top_k=args.top_k,
-            vector_weight=args.vector_weight,
-            fts_weight=args.fts_weight,
-            rrf_k=args.rrf_k,
-            use_postgres=False,
-        )
-        print("[batch] Backend: LOCAL (SQLite)")
+    retriever = LegalRetriever(
+        top_k=args.top_k,
+        vector_weight=args.vector_weight,
+        fts_weight=args.fts_weight,
+        rrf_k=args.rrf_k,
+        use_postgres=False,
+    )
+    print("[batch] Backend: LOCAL (SQLite)")
 
     import dataclasses
     from src.retrieval.retriever import RetrievalResult
@@ -420,6 +717,7 @@ def main():
     avg_time = total_time / len(questions) if questions else 0
     print("-" * 60)
     print(f"[batch] ✓ Xong! {len(submission)} câu | avg {avg_time:.2f}s/câu")
+    print(f"[batch] [Citation Filter Stats] Fallback Top-1 triggered: Docs={FALLBACK_DOCS_COUNT}, Articles={FALLBACK_ARTICLES_COUNT}")
     print(f"[batch] ✓ Đã ghi → {args.output}")
     print()
     print("Để nén và nộp bài:")

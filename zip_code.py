@@ -12,7 +12,7 @@ EXCLUDE_DIRS = {
 
 # File extensions to skip
 EXCLUDE_EXTENSIONS = {
-    ".db", ".index", ".pyc", ".pyo", ".json",
+    ".db", ".index", ".pyc", ".pyo",
 }
 
 def zip_src(zip_filename=ZIP_NAME, src_dir=SRC_DIR):
