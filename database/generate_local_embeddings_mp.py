@@ -9,7 +9,7 @@ import torch
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOCAL_DB_PATH = os.path.join(PROJECT_ROOT, "database", "local_chunks.db")
-MODEL_NAME = "bkai-foundation-models/vietnamese-bi-encoder"
+MODEL_NAME = "BAAI/bge-m3"
 
 def worker_process(input_queue, output_queue, thread_id):
     try:
