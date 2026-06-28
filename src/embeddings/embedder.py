@@ -3,7 +3,7 @@ import time
 import numpy as np
 
 class VietnameseBiEncoder:
-    def __init__(self, model_name: str = "bkai-foundation-models/vietnamese-bi-encoder"):
+    def __init__(self, model_name: str = "BAAI/bge-m3"):
         self.model_name = model_name
         self._model = None
 

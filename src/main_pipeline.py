@@ -82,7 +82,8 @@ class LegalRAGPipeline:
             return {"answer": "Câu hỏi trống."}
 
         # Step 2: Query Rewrite
-        rewritten_query = self.rewriter.rewrite(query)
+        rewrite_res = self.rewriter.rewrite(query)
+        rewritten_query = rewrite_res["rewritten_query"]
 
         # Step 3 & 4: Retrieval & Merge
         # Chúng ta dùng rewritten_query để search nhằm tăng độ bao phủ

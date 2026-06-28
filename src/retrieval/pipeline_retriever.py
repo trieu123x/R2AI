@@ -14,11 +14,11 @@ class PipelineRetriever:
     Step 3: BM25 (top 10) + Embedding (top 10)
     Step 4: Merge
     """
-    def __init__(self, db_path=None, top_k_each=50, use_postgres=False):
+    def __init__(self, db_path=None, top_k_each=50):
         if db_path:
-            self.retriever = LegalRetriever(db_path=db_path, use_postgres=use_postgres)
+            self.retriever = LegalRetriever(db_path=db_path)
         else:
-            self.retriever = LegalRetriever(use_postgres=use_postgres)
+            self.retriever = LegalRetriever()
         self.top_k_each = top_k_each
 
     def retrieve_and_merge(self, query: str) -> List[RetrievalResult]:

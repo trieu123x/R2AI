@@ -17,3 +17,9 @@ database/*.index
 retrieval/bge-reranker-*/
 src/retrieval/bge-reranker-*/
 BAAI/
+
+# Local cache directory for HuggingFace models
+.model_cache/
+
+# Whitelist synonyms.json
+!src/retrieval/synonyms.json

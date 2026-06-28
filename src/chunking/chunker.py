@@ -3,47 +3,25 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import re
-import psycopg2
 from pyvi import ViTokenizer
-from config import Config
 
 def load_sample_document():
-    """Load a sample legal document (e.g., SME Support Law 04/2017/QH14) from Supabase."""
-    conn = psycopg2.connect(Config.DATABASE_URL)
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        SELECT id, document_number, title, content 
-        FROM documents 
-        WHERE document_number = '04/2017/QH14' 
-        LIMIT 1;
-    """)
-    row = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    
-    if row:
-        return {
-            "id": row[0],
-            "document_number": row[1],
-            "title": row[2],
-            "content": row[3]
-        }
-    else:
-        conn = psycopg2.connect(Config.DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, document_number, title, content FROM documents LIMIT 1;")
-        row = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        if row:
-            return {
-                "id": row[0],
-                "document_number": row[1],
-                "title": row[2],
-                "content": row[3]
-            }
-    return None
+    """Load a hardcoded sample legal document for offline testing."""
+    return {
+        "id": 1,
+        "document_number": "04/2017/QH14",
+        "title": "Luật Hỗ trợ doanh nghiệp nhỏ và vừa",
+        "content": """LUẬT HỖ TRỢ DOANH NGHIỆP NHỎ VÀ VỪA
+Điều 1. Phạm vi điều chỉnh
+Luật này quy định về nguyên tắc, nội dung, nguồn lực hỗ trợ doanh nghiệp nhỏ và vừa; trách nhiệm của cơ quan, tổ chức và cá nhân có liên quan đến hỗ trợ doanh nghiệp nhỏ và vừa.
+Điều 2. Đối tượng áp dụng
+1. Doanh nghiệp được thành lập, tổ chức và hoạt động theo quy định của pháp luật về doanh nghiệp, đáp ứng các tiêu chí xác định doanh nghiệp nhỏ và vừa theo quy định của Luật này.
+2. Cơ quan, tổ chức và cá nhân có liên quan đến hỗ trợ doanh nghiệp nhỏ và vừa.
+Điều 3. Nguyên tắc hỗ trợ doanh nghiệp nhỏ và vừa
+1. Việc hỗ trợ doanh nghiệp nhỏ và vừa phải tôn trọng quy luật thị trường, phù hợp với điều ước quốc tế mà nước Cộng hòa xã hội chủ nghĩa Việt Nam là thành viên.
+2. Bảo đảm công khai, minh bạch về nội dung, đối tượng, trình tự, thủ tục, nguồn lực, mức hỗ trợ và kết quả hỗ trợ.
+3. Trường hợp doanh nghiệp nhỏ và vừa đồng thời đáp ứng điều kiện của các mức hỗ trợ khác nhau trong cùng một nội dung hỗ trợ thì được lựa chọn mức hỗ trợ có lợi nhất."""
+    }
 
 def structure_aware_chunking(doc_title, doc_number, content, max_chars=800, overlap=100):
     """

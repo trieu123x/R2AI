@@ -1,0 +1,54 @@
+{
+  "sme": [
+    "doanh nghiệp nhỏ và vừa",
+    "nhỏ và vừa",
+    "doanh nghiệp siêu nhỏ"
+  ],
+  "sa_thải": [
+    "đuổi việc",
+    "chấm dứt hợp đồng lao động",
+    "kỷ luật sa thải"
+  ],
+  "thai_sản": [
+    "nghỉ đẻ",
+    "mang thai",
+    "sinh con",
+    "thái sản"
+  ],
+  "bảo_hiểm_xã_hội": [
+    "bhxh",
+    "bảo hiểm",
+    "đóng bảo hiểm"
+  ],
+  "giấy_tờ": [
+    "bản chính",
+    "bằng cấp",
+    "chứng chỉ",
+    "văn bằng",
+    "giấy tờ tùy thân"
+  ],
+  "công_đoàn": [
+    "tổ chức công đoàn",
+    "đại diện người lao động"
+  ],
+  "thuế_thu_nhập_doanh_nghiệp": [
+    "thuế tndn",
+    "thuế doanh nghiệp",
+    "nộp thuế tndn"
+  ],
+  "hợp_đồng_lao_động": [
+    "hđlđ",
+    "hợp đồng làm việc",
+    "ký hợp đồng"
+  ],
+  "đăng_ký_kinh_doanh": [
+    "đăng ký doanh nghiệp",
+    "giấy phép kinh doanh",
+    "thành lập doanh nghiệp"
+  ],
+  "thuế_giá_trị_gia_tăng": [
+    "thuế gtgt",
+    "thuế vat",
+    "vat"
+  ]
+}

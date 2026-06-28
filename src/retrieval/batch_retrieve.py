@@ -178,8 +178,7 @@ def main():
     parser.add_argument("--rrf-k", type=int, default=60)
     parser.add_argument("--local", "-l", action="store_true", default=True,
                         help="Dung local SQLite thay vi Supabase (offline mode) (mac dinh: BAT)")
-    parser.add_argument("--postgres", action="store_true", default=False,
-                        help="Dung Supabase/PostgreSQL (mac dinh: TAT)")
+
     parser.add_argument("--rerank", "-r", action="store_true", default=True,
                         help="Kích hoạt Reranker PhoRanker để tăng độ chính xác tìm kiếm (mặc định: BẬT)")
     parser.add_argument("--no-rerank", dest="rerank", action="store_false",
@@ -205,32 +204,14 @@ def main():
     print(f"[batch] Mode: {args.mode} | Top-K: {args.top_k} | Rerank: {args.rerank} | LLM: {args.llm}")
     print("-" * 60)
 
-    # Chọn retriever
-    use_postgres = getattr(args, "postgres", False)
-    if use_postgres:
-        try:
-            retriever = LegalRetriever(
-                top_k=args.top_k,
-                vector_weight=args.vector_weight,
-                fts_weight=args.fts_weight,
-                rrf_k=args.rrf_k,
-                use_postgres=True,
-            )
-            retriever._get_pg_conn()
-            print("[batch] Backend: LOCAL POSTGRESQL")
-        except Exception as e:
-            print(f"[batch] Local PostgreSQL failed ({e}), using LOCAL SQLite")
-            use_postgres = False
-
-    if not use_postgres:
-        retriever = LegalRetriever(
-            top_k=args.top_k,
-            vector_weight=args.vector_weight,
-            fts_weight=args.fts_weight,
-            rrf_k=args.rrf_k,
-            use_postgres=False,
-        )
-        print("[batch] Backend: LOCAL (SQLite)")
+    # Khởi tạo retriever SQLite
+    retriever = LegalRetriever(
+        top_k=args.top_k,
+        vector_weight=args.vector_weight,
+        fts_weight=args.fts_weight,
+        rrf_k=args.rrf_k,
+    )
+    print("[batch] Backend: LOCAL (SQLite)")
 
     import dataclasses
     from src.retrieval.retriever import RetrievalResult
